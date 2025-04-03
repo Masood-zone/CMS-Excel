@@ -5,9 +5,6 @@
     "strict": true,
     "lib": ["esnext", "dom"],
     "target": "esnext",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "baseUrl": ".",
     "esModuleInterop": true
   }
