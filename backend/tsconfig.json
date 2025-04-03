@@ -4,8 +4,6 @@
     "outDir": "dist",
     "strict": true,
     "lib": ["esnext", "dom"],
-    "target": "esnext",
-    "baseUrl": ".",
     "esModuleInterop": true
   }
 }
