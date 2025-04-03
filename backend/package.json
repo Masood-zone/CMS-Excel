@@ -1,10 +1,35 @@
 {
-  "name": "rest-express",
+  "name": "canteen-management-backend",
+  "private": true,
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "seed": "ts-node prisma/seed.ts",
+    "migrate": "prisma migrate dev --name init",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset",
+    "migrate:status": "prisma migrate status",
+    "migrate:resolve": "prisma migrate resolve --applied",
+    "migrate:rollback": "prisma migrate rollback",
+    "migrate:push": "prisma db push",
+    "migrate:generate": "prisma migrate dev --name init"
   },
+  "keywords": [
+    "canteen",
+    "management",
+    "backend",
+    "typescript",
+    "nodejs",
+    "express",
+    "prisma",
+    "jwt",
+    "bcrypt"
+  ],
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcrypt": "^5.1.1",
@@ -16,7 +41,8 @@
     "mailtrap": "^3.4.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
-    "otp-generator": "^4.0.1"
+    "otp-generator": "^4.0.1",
+    "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -25,6 +51,7 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "22.9.3",
     "@types/node-cron": "^3.0.11",
+    "nodemon": "^3.1.9",
     "prisma": "5.22.0",
     "ts-node": "10.9.2",
     "typescript": "5.7.2"

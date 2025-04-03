@@ -4,8 +4,8 @@ import cron from "node-cron";
 const prisma = new PrismaClient();
 
 export const setupDailyRecordCreation = () => {
-  // Schedule the job to run every day at a specific time 11:03AM
-  cron.schedule("03 11 * * *", async () => {
+  // Schedule the job to run every day at a specific time 06:00AM
+  cron.schedule("00 06 * * *", async () => {
     console.log("Running daily record creation job");
 
     try {

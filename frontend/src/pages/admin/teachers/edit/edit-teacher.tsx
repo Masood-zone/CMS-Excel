@@ -15,12 +15,12 @@ export default function EditTeacher() {
   const { id } = useParams();
   const { data: teacher, error } = useFetchTeacher(Number(id)) as {
     data: {
-      data: Teacher;
+      teacher: Teacher;
     };
     error: { message: string };
   };
   const { data: classList, error: classListError } = useFetchClasses();
-  const teacherData = teacher?.data;
+  const teacherData = teacher?.teacher;
 
   // Show error toast if there is an error fetching classes
   useEffect(() => {

@@ -80,7 +80,7 @@ app.post("/reset-password", (req, res, next) => {
 app.post("/login", (req, res, next) => {
   userController.login(req, res).catch(next); //Works
 });
-app.get("/users", authenticateToken, userController.getAll); //works
+app.get("/users", userController.getAll); //works
 app.get("/users/:id", authenticateToken, userController.getById); //works
 app.put("/users/:id", authenticateToken, userController.update); //works
 app.delete("/users/:id", authenticateToken, userController.delete); //works

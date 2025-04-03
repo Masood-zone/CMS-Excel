@@ -23,6 +23,8 @@ export default function EditTeacherForm({
   teacherData: Teacher;
   classList: Class[];
 }) {
+  console.log(teacherData, "teacherData");
+
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: updateTeacher, isLoading } = useUpdateTeacher();
   const {
@@ -40,7 +42,7 @@ export default function EditTeacherForm({
 
   const onSubmit = async (data: Teacher) => {
     try {
-      await updateTeacher({
+      updateTeacher({
         ...data,
         id: teacherData.id,
         assigned_class: {

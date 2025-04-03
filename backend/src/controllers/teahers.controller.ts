@@ -205,11 +205,14 @@ export const teacherController = {
   },
 
   updateTeacher: async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
-    const { email, name, phone, gender, password, assigned_class } = req.body;
+    // const id = parseInt(req.params.id);
+    const { id, email, name, phone, gender, password, assigned_class } =
+      req.body;
+
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid teacher ID" });
     }
+
     try {
       const updatedTeacher = await prisma.user.update({
         where: { id },
