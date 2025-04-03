@@ -33,11 +33,12 @@ export const teacherController = {
   }),
 
   updateTeacher: catchAsync(async (req: Request, res: Response) => {
-    const { id } = req.body;
-    if (isNaN(id)) {
+    const { id } = req.params;
+    if (!parseInt(id)) {
+      console.log("ID is a number", id);
       throw new ApiError(400, "Invalid teacher ID");
     }
-    const result = await teacherService.updateTeacher(id, req.body);
+    const result = await teacherService.updateTeacher(parseInt(id), req.body);
     res.json(result);
   }),
 

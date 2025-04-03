@@ -79,7 +79,7 @@ export const fetchTeacher = async (id: number) => {
  */
 export const createTeacher = async (data: Teacher) => {
   try {
-    const response = await apiClient.post("/signup", data);
+    const response = await apiClient.post("/auth/signup", data);
     return response.data;
   } catch (error) {
     console.error("Error creating teacher:", error);
@@ -441,7 +441,7 @@ export const createRecordsAmount = async (data: RecordsAmount) => {
  *  Update settings amount */
 export const updateRecordsAmount = async (data: RecordsAmount) => {
   try {
-    const response = await apiClient.put("/settings/amount", data);
+    const response = await apiClient.patch("/settings/amount", data);
     return response.data;
   } catch (error) {
     console.log("Error updating preset amount");

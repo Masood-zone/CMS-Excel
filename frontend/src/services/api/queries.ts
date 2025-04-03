@@ -493,7 +493,7 @@ export const useCreateRecordsAmount = () => {
   return useMutation((data: RecordsAmount) => createRecordsAmount(data), {
     onSuccess: () => {
       toast.success("Preset amount created successfully!");
-      queryClient.invalidateQueries(["records"]);
+      queryClient.invalidateQueries(["records", "recordsAmount"]);
     },
     onError: (error) => {
       console.error(error);
@@ -509,7 +509,7 @@ export const useUpdateRecordsAmount = () => {
   return useMutation((data: RecordsAmount) => updateRecordsAmount(data), {
     onSuccess: () => {
       toast.success("Preset amount updated successfully!");
-      queryClient.invalidateQueries(["records"]);
+      queryClient.invalidateQueries(["records", "recordsAmount"]);
     },
     onError: (error) => {
       console.error(error);

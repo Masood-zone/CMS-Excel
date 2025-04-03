@@ -8,6 +8,6 @@ router.use(authenticate);
 
 router.get("/amount", settingsController.getAmount);
 router.post("/amount", settingsController.createAmount);
-router.put("/amount", settingsController.updateAmount);
+router.patch("/amount", settingsController.updateAmount);
 
 export const settingsRoutes = router;

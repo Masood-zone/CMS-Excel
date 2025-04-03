@@ -18,6 +18,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Canteen() {
   const { mutate: createRecordsAmount, isLoading: creatingPriceLoader } =
@@ -29,6 +37,7 @@ export default function Canteen() {
   // State for edit mode and input value
   const [isEditing, setIsEditing] = useState(false);
   const [price, setPrice] = useState<string | number>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -47,36 +56,21 @@ export default function Canteen() {
       return;
     }
 
-    updateRecordsAmount(
-      { value: String(price) },
-      {
-        onSuccess: () => {
-          toast.success("Canteen pricing updated successfully.");
-          setIsEditing(false); // Exit edit mode
-        },
-        onError: () => {
-          toast.error("Failed to update canteen pricing.");
-        },
-      }
-    );
+    updateRecordsAmount({ value: String(price) });
   };
 
   // Handle create if price doesn't exist
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!price || Number(price) < 0) {
       toast.error("Price must be a valid positive number.");
       return;
     }
 
-    createRecordsAmount(
-      { value: String(price) },
+    await createRecordsAmount(
+      { name: "amount", value: String(price) },
       {
         onSuccess: () => {
-          toast.success("Canteen pricing created successfully.");
-          setIsEditing(false); // Exit edit mode
-        },
-        onError: () => {
-          toast.error("Failed to create canteen pricing.");
+          setIsModalOpen(false);
         },
       }
     );
@@ -122,7 +116,9 @@ export default function Canteen() {
               <div className="flex items-center w-56 text-right">
                 {!isEditing ? (
                   <span className="text-lg font-medium text-primary">
-                    Ghc{price || "Not Set"}
+                    {amountSetting?.data?.value
+                      ? `Ghc${amountSetting.data.value}`
+                      : "Not Set"}
                   </span>
                 ) : (
                   <Input
@@ -138,7 +134,14 @@ export default function Canteen() {
             )}
           </div>
           <div className="flex justify-end space-x-4">
-            {!isEditing ? (
+            {!amountSetting?.data?.value ? (
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                disabled={creatingPriceLoader}
+              >
+                Create
+              </Button>
+            ) : !isEditing ? (
               <Button
                 onClick={() => setIsEditing(true)}
                 disabled={creatingPriceLoader || updatingPriceLoader}
@@ -155,18 +158,50 @@ export default function Canteen() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={amountSetting ? handleSave : handleCreate}
+                  onClick={handleSave}
                   disabled={creatingPriceLoader || updatingPriceLoader}
                 >
-                  {creatingPriceLoader || updatingPriceLoader
-                    ? "Saving..."
-                    : "Save"}
+                  {updatingPriceLoader ? "Saving..." : "Save"}
                 </Button>
               </>
             )}
           </div>
         </CardContent>
       </Card>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create Canteen Pricing</DialogTitle>
+            <DialogDescription>
+              Set the initial pricing for canteen items.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="modal-price" className="col-span-4">
+                Price (Ghc)
+              </Label>
+              <Input
+                id="modal-price"
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="col-span-4"
+                min="0"
+                placeholder="Enter price"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} disabled={creatingPriceLoader}>
+              {creatingPriceLoader ? "Creating..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
