@@ -3,6 +3,18 @@ import { recordRepository } from "../db/repositories/record-repository";
 import { ApiError } from "../utils/api-error";
 import { prisma } from "../db/client";
 
+// interface TeacherData {
+//   email: string;
+//   name: string;
+//   phone: string;
+//   gender: string;
+//   password?: string;
+// }
+
+// interface UpdateTeacherData extends Partial<TeacherData> {
+//   assigned_class?: { id: number };
+// }
+
 export const teacherService = {
   getAllTeachers: async () => {
     const teachers = await userRepository.findTeachers();
@@ -133,7 +145,12 @@ export const teacherService = {
       id: teacher.id,
       name: teacher.name,
       totalAmount: teacher.records.reduce(
-        (sum, record) => sum + record.amount,
+        (
+          sum: number,
+          record: {
+            amount: number;
+          }
+        ) => sum + record.amount,
         0
       ),
     }));
