@@ -3,7 +3,13 @@
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
+    "target": "esnext",
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "baseUrl": ".",
     "esModuleInterop": true
   }
 }
