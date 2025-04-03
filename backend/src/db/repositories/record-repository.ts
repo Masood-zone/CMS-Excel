@@ -15,6 +15,7 @@ export const recordRepository = {
   create: async (data: Prisma.RecordCreateInput) => {
     return prisma.record.create({
       data,
+      include: { student: true }, // Ensure student is returned
     });
   },
 

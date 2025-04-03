@@ -110,7 +110,7 @@ export const teacherService = {
       select: {
         id: true,
         name: true,
-        Record: {
+        records: {
           where: {
             submitedAt: {
               gte: startDate,
@@ -132,7 +132,7 @@ export const teacherService = {
     const formattedRecords = teacherRecords.map((teacher) => ({
       id: teacher.id,
       name: teacher.name,
-      totalAmount: teacher.Record.reduce(
+      totalAmount: teacher.records.reduce(
         (sum, record) => sum + record.amount,
         0
       ),
