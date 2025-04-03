@@ -56,7 +56,7 @@ export const authService = {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
+      { expiresIn: "2d" }
     );
 
     const assignedClass = await prisma.class.findFirst({
