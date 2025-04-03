@@ -40,6 +40,7 @@ import {
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
+// import { useAuthStore } from "@/store/authStore";
 /**
  * Query: Fetch all records.
  */
@@ -614,11 +615,13 @@ export const useGetPresetAmount = () => {
  * Query: Admin's Analytics
  */
 export const useAdminDashboardAnalytics = () => {
+  // const { token } = useAuthStore();
   return useQuery(["adminAnalytics"], fetchAdminAnalytics, {
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch admin analytics.");
     },
+    // enabled: token,
   });
 };
 /**
