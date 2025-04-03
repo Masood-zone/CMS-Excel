@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-import { TeacherRecord } from "../types/user.interface";
+import { TeacherRecord } from "../../types/user.interface";
 
 const prisma = new PrismaClient();
 

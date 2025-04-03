@@ -2,8 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { sendOtpMail } from "../../services/mailer.service";
-import { findOTPAndUpdateUser } from "../../services/prisma.queries";
+import { sendOtpMail } from "../../../services/mailer.service";
+import { findOTPAndUpdateUser } from "../../../services/prisma.queries";
 import { json } from "stream/consumers";
 
 const prisma = new PrismaClient();

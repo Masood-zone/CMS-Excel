@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-import { generateRecordsForNewStudent } from "../../services/record-generation-service";
+import { generateRecordsForNewStudent } from "../../../services/record-generation-service";
 
 const prisma = new PrismaClient();
 

@@ -30,7 +30,7 @@ export const fetchRecordsAmount = async () => {
  */
 export const updateUser = async (data: FormUser) => {
   try {
-    const response = await apiClient.put(`/users/${data.id}`, data);
+    const response = await apiClient.patch(`/users/${data.id}`, data);
     return response.data;
   } catch (error) {
     console.error("Error updating user:", error);
@@ -42,7 +42,7 @@ export const updateUser = async (data: FormUser) => {
  */
 export const updateTeacher = async (data: Teacher) => {
   try {
-    const response = await apiClient.put(`/teachers/${data.id}`, data);
+    const response = await apiClient.patch(`/teachers/${data.id}`, data);
     return response.data;
   } catch (error) {
     console.error("Error updating user:", error);

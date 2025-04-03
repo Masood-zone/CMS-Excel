@@ -1,52 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
+// User model - represents system users (admins, teachers, etc.)
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String?
-  name     String?
-  phone    String?
-  role     String
-  gender  String?
-  assigned_class    Class?   @relation 
-  Record   Record[] 
-  otp      OtpCodes[]
+  id             Int        @id @default(autoincrement())
+  email          String     @unique
+  password       String?
+  name           String?
+  phone          String?
+  role           String     // e.g., "ADMIN", "TEACHER"
+  gender         String?
+  
+  // Relations
+  assigned_class Class?     // One-to-one relation with Class (supervisor)
+  records        Record[]   // One-to-many relation with Record
+  otpCodes       OtpCodes[] // One-to-many relation with OtpCodes
+
+  // Timestamps
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
+// Settings model - stores application configuration
 model Settings {
-  id      Int @id @default(autoincrement())
-  name    String
+  id      Int    @id @default(autoincrement())
+  name    String @unique
   value   String
 }
 
+// Class model - represents a school class
 model Class {
   id           Int       @id @default(autoincrement())
   name         String    @unique // Ensure class names are unique
   description  String?
   supervisorId Int?      @unique // Each class can have one unique supervisor
-  records Record[]
-  students     Student[]
-  supervisor   User?     @relation(fields: [supervisorId], references: [id])
+  
+  // Relations
+  records      Record[]   // One-to-many relation with Record
+  students     Student[]  // One-to-many relation with Student
+  supervisor   User?      @relation(fields: [supervisorId], references: [id], onDelete: SetNull)
+  
+  // Timestamps
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Indexes
+  @@index([supervisorId])
 }
 
+// Student model - represents a student in a class
 model Student {
   id          Int      @id @default(autoincrement())
   name        String
   age         Int
   parentPhone String?
-  gender     String?
+  gender      String?
   classId     Int?
-  class       Class?  @relation(fields: [classId], references: [id])
-  Record      Record[]
+  
+  // Relations
+  class       Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  records     Record[] // One-to-many relation with Record
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Indexes
+  @@index([classId])
 }
 
+// Record model - represents a payment or attendance record
 model Record {
   id             Int      @id @default(autoincrement())
   amount         Int
@@ -57,40 +89,76 @@ model Record {
   hasPaid        Boolean  @default(false)
   isAbsent       Boolean  @default(false)
   settingsAmount Int?
-  teacher        User     @relation(fields: [submitedBy], references: [id])
-  student        Student? @relation(fields: [payedBy], references: [id])
-  classId        Int?     
-  class          Class?   @relation(fields: [classId], references: [id])
+  classId        Int?
+  
+  // Relations
+  teacher        User     @relation(fields: [submitedBy], references: [id], onDelete: Cascade)
+  student        Student? @relation(fields: [payedBy], references: [id], onDelete: Cascade)
+  class          Class?   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
+  // Unique constraints
   @@unique([payedBy, submitedAt])
+  
+  // Indexes for performance
   @@index([submitedBy])
   @@index([payedBy])
   @@index([classId])
+  @@index([submitedAt])
 }
 
+// OtpCodes model - stores one-time passwords for password reset
 model OtpCodes {
-  id Int @id @default(autoincrement())
-  userId Int 
-  code String
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  code      String
   createdAt DateTime @default(now())
   expiresAt DateTime
-  owner User @relation(fields: [userId], references: [id])
+  
+  // Relations
+  owner     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes
+  @@index([userId])
+  @@index([code])
 }
 
-
+// Expense model - represents a financial expense
 model Expense {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   referenceId Int
   amount      Int
-  date        DateTime @default(now())
+  date        DateTime  @default(now())
   description String?
-  reference   Reference @relation(fields: [referenceId], references: [id])
   submitedBy  Int
+  
+  // Relations
+  reference   Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Indexes
+  @@index([referenceId])
+  @@index([submitedBy])
+  @@index([date])
 }
 
+// Reference model - categorizes expenses
 model Reference {
-  id          Int      @id @unique @default(autoincrement())
+  id          Int       @id @unique @default(autoincrement())
   name        String
   description String?
-  expenses    Expense[]
+  
+  // Relations
+  expenses    Expense[] // One-to-many relation with Expense
+  
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
+
