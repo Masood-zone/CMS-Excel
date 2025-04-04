@@ -8,7 +8,7 @@ export const config = {
     port: process.env.PORT || 3400,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || "https://can.rasking.top",
     optionsSuccessStatus: 200,
   },
   jwt: {
