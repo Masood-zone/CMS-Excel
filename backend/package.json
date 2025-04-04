@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "pnpm prisma generate && tsc",
-    "start": "prisma migrate deploy && node dist/src/index.js",
+    "start": "prisma migrate deploy && node dist/index.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "seed": "ts-node prisma/seed.ts",

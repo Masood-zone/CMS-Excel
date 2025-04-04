@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { userRepository } from "../db/repositories/user-repository";
 import { config } from "../config";
