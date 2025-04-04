@@ -3,7 +3,7 @@ import { authService } from "../../services/auth-service";
 import { catchAsync } from "../../utils/catch-async";
 import { sendOtpMail } from "../../services/mailer-service";
 import { findOTPAndUpdateUser } from "../../services/mailer-service";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export const authController = {
   signup: catchAsync(async (req: Request, res: Response) => {
