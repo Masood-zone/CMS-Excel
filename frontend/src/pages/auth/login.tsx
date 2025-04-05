@@ -2,7 +2,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -144,7 +143,7 @@ export default function Login() {
                 Log in
               </Button>
             </CardContent>
-            <CardFooter>
+            {/* <CardFooter>
               <div className="space-x-4 text-center text-gray-500">
                 <Link to="/contact-us" className="text-sm hover:text-primary">
                   <span>&copy;CMS</span> Contact
@@ -156,7 +155,7 @@ export default function Login() {
                   Terms & Conditions
                 </Link>
               </div>
-            </CardFooter>
+            </CardFooter> */}
           </form>
         </Card>
       </main>
