@@ -738,6 +738,35 @@ const SidebarMenuSubButton = React.forwardRef<
 });
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
+// Add this new component near the end of the file, before the exports
+
+const SidebarLink = React.forwardRef<
+  HTMLAnchorElement,
+  Omit<React.ComponentProps<"a">, "ref"> & {
+    asChild?: boolean;
+    to?: string; // Add support for React Router's "to" prop
+  }
+>(({ asChild = false, onClick, to, ...props }, ref) => {
+  const Comp = asChild ? Slot : "a";
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleClick = React.useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (isMobile) {
+        setOpenMobile(false);
+      }
+      onClick?.(event);
+    },
+    [isMobile, setOpenMobile, onClick]
+  );
+
+  // If "to" prop is provided, pass it through (for React Router)
+  const linkProps = to ? { to, ...props } : props;
+
+  return <Comp ref={ref} onClick={handleClick} {...linkProps} />;
+});
+SidebarLink.displayName = "SidebarLink";
+
 export {
   Sidebar,
   SidebarContent,
@@ -749,6 +778,7 @@ export {
   SidebarHeader,
   SidebarInput,
   SidebarInset,
+  SidebarLink, // Add this to exports
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuBadge,
