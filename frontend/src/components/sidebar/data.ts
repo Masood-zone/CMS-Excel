@@ -86,6 +86,10 @@ export const teacher_nav = {
           url: "/teacher",
         },
         {
+          title: "View Canteen Records",
+          url: "/teacher/canteen/submitted-records",
+        },
+        {
           title: "Canteen",
           url: "/teacher/canteen",
         },

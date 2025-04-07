@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -144,11 +144,11 @@ export default function Canteen() {
           <p className="text-base">Record canteen for {assigned_class?.name}</p>
         </div>
         <div className="space-x-2">
-          <Button variant="ghost">
+          {/* <Button variant="ghost">
             <Link to="/teacher/canteen/submitted-records">
               View Submitted Records
             </Link>
-          </Button>
+          </Button> */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button>Submit canteen records</Button>
