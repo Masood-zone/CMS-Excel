@@ -8,6 +8,8 @@ router.use(authenticate);
 
 router.get("/", studentController.getAll);
 router.get("/:id", studentController.getById);
+router.get("/:id/owing", studentController.getStudentOwing);
+router.post("/:id/pay", studentController.payStudentOwing);
 router.get("/class/:classId", studentController.getClassById);
 router.post("/", studentController.create);
 router.put("/:id", studentController.update);

@@ -65,6 +65,7 @@ model Student {
   parentPhone String?
   gender      String?
   classId     Int?
+  owing       Int      @default(0)  // Track total amount owing
   
   // Relations
   class       Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
@@ -81,15 +82,17 @@ model Student {
 // Record model - represents a payment or attendance record
 model Record {
   id             Int      @id @default(autoincrement())
-  amount         Int
+  amount         Int      // Amount paid (if any)
   submitedAt     DateTime @default(now())
   submitedBy     Int
   payedBy        Int?
   isPrepaid      Boolean  @default(false)
   hasPaid        Boolean  @default(false)
   isAbsent       Boolean  @default(false)
-  settingsAmount Int?
+  settingsAmount Int?     // The canteen price for this day
   classId        Int?
+  owingBefore    Int      @default(0)  // Owing amount before this record
+  owingAfter     Int      @default(0)  // Owing amount after this record
   
   // Relations
   teacher        User     @relation(fields: [submitedBy], references: [id], onDelete: Cascade)
@@ -109,6 +112,7 @@ model Record {
   @@index([classId])
   @@index([submitedAt])
 }
+
 
 // OtpCodes model - stores one-time passwords for password reset
 model OtpCodes {

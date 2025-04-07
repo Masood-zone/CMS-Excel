@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { studentService } from "../../services/student-service";
 import { catchAsync } from "../../utils/catch-async";
+import { ApiError } from "../../utils/api-error";
 
 export const studentController = {
   getAll: catchAsync(async (req: Request, res: Response) => {
@@ -29,6 +30,27 @@ export const studentController = {
     const id = Number.parseInt(req.params.id);
     const updatedStudent = await studentService.updateStudent(id, req.body);
     res.json(updatedStudent);
+  }),
+
+  getStudentOwing: catchAsync(async (req: Request, res: Response) => {
+    const id = Number.parseInt(req.params.id);
+    const owingDetails = await studentService.getStudentOwingDetails(id);
+    res.json(owingDetails);
+  }),
+
+  payStudentOwing: catchAsync(async (req: Request, res: Response) => {
+    const id = Number.parseInt(req.params.id);
+    const { amount } = req.body;
+
+    if (!amount || isNaN(Number.parseFloat(amount))) {
+      throw new ApiError(400, "Valid payment amount is required");
+    }
+
+    const result = await studentService.payStudentOwing(
+      id,
+      Number.parseFloat(amount)
+    );
+    res.json(result);
   }),
 
   delete: catchAsync(async (req: Request, res: Response) => {

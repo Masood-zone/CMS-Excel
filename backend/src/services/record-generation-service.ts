@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +11,7 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
     });
 
     if (!student || !student.class) {
-      console.error(
+      logger.error(
         `Student with id ${studentId} not found or not assigned to a class`
       );
       return;
@@ -20,9 +21,12 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
       where: { name: "amount" },
     });
 
-    const settingsAmount = settings ? parseInt(settings.value) : 0;
+    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Get current owing amount (should be 0 for new students)
+    const currentOwing = student.owing || 0;
 
     await prisma.record.create({
       data: {
@@ -35,16 +39,144 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
         isAbsent: false,
         settingsAmount,
         submitedBy: student.class.supervisorId || student.class.id,
+        owingBefore: currentOwing,
+        owingAfter: currentOwing, // Initially the same as owingBefore
       },
     });
 
-    console.log(`Record generated for new student ${studentId}`);
+    logger.info(`Record generated for new student ${studentId}`);
   } catch (error) {
     if ((error as Prisma.PrismaClientKnownRequestError).code !== "P2002") {
-      console.error(
+      logger.error(
         `Error generating record for new student ${studentId}:`,
         error
       );
     }
   }
+};
+
+export const generateDailyRecords = async (options: {
+  classId?: number;
+  date: Date;
+}) => {
+  const { classId, date } = options;
+  const formattedDate = new Date(date);
+  formattedDate.setHours(0, 0, 0, 0);
+
+  // Get the settings amount
+  const settings = await prisma.settings.findFirst({
+    where: { name: "amount" },
+  });
+  const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+
+  // Get classes based on the query
+  const classes = classId
+    ? [await prisma.class.findUnique({ where: { id: classId } })]
+    : await prisma.class.findMany();
+
+  const createdRecords = [];
+  const skippedRecords = [];
+  const updatedOwings = [];
+
+  // Generate records for each student in each class
+  for (const classItem of classes) {
+    if (!classItem) continue;
+
+    const students = await prisma.student.findMany({
+      where: { classId: classItem.id },
+    });
+
+    // First, update owing amounts for students who didn't pay yesterday
+    const yesterday = new Date(formattedDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+
+    // Get yesterday's records
+    const yesterdayRecords = await prisma.record.findMany({
+      where: {
+        classId: classItem.id,
+        submitedAt: {
+          gte: yesterday,
+          lte: yesterdayEnd,
+        },
+      },
+      include: { student: true },
+    });
+
+    // Update owing amounts for students who didn't pay yesterday
+    for (const record of yesterdayRecords) {
+      if (!record.hasPaid && !record.isAbsent && record.student) {
+        // If student didn't pay yesterday and wasn't absent, add to their owing
+        const newOwingAmount =
+          record.student.owing + (record.settingsAmount || 0);
+
+        await prisma.student.update({
+          where: { id: record.student.id },
+          data: { owing: newOwingAmount },
+        });
+
+        // Update yesterday's record to reflect the new owing amount
+        await prisma.record.update({
+          where: { id: record.id },
+          data: { owingAfter: newOwingAmount },
+        });
+
+        updatedOwings.push({
+          studentId: record.student.id,
+          previousOwing: record.student.owing,
+          newOwing: newOwingAmount,
+        });
+      }
+    }
+
+    // Now create today's records with updated owing amounts
+    for (const student of students) {
+      try {
+        // Get the current owing amount for this student
+        const currentStudent = await prisma.student.findUnique({
+          where: { id: student.id },
+        });
+
+        const currentOwing = currentStudent?.owing || 0;
+
+        const record = await prisma.record.create({
+          data: {
+            classId: classItem.id,
+            payedBy: student.id,
+            submitedAt: formattedDate,
+            amount: 0,
+            hasPaid: false,
+            isPrepaid: false,
+            isAbsent: false,
+            settingsAmount,
+            submitedBy: classItem.supervisorId || 0,
+            owingBefore: currentOwing,
+            owingAfter: currentOwing, // Initially the same as owingBefore
+          },
+        });
+
+        createdRecords.push(record);
+      } catch (error) {
+        // If a record already exists for this student on this day, skip it
+        if ((error as Prisma.PrismaClientKnownRequestError).code === "P2002") {
+          skippedRecords.push({
+            studentId: student.id,
+            date: formattedDate.toString(),
+          });
+        } else {
+          logger.error(`Error creating record: ${error}`);
+          throw error;
+        }
+      }
+    }
+  }
+
+  return {
+    createdRecords: createdRecords.length,
+    skippedRecords,
+    updatedOwings,
+  };
 };

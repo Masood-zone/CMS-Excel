@@ -81,7 +81,7 @@ export const recordService = {
       const studentsInClass = await studentRepository.findByClassId(classId);
 
       const settings = await settingsRepository.findByName("amount");
-      const settingsAmount = settings ? parseInt(settings.value) : 0;
+      const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
 
       const existingRecords = await recordRepository.findByClassAndDate(
         classId,
@@ -357,21 +357,21 @@ export const recordService = {
         prisma.record.upsert({
           where: {
             payedBy_submitedAt: {
-              payedBy: parseInt(student.paidBy),
+              payedBy: Number.parseInt(student.paidBy),
               submitedAt: startOfDay,
             },
           },
           update: {
-            amount: student.amount || student.amount_owing || 0,
+            amount: student.amount ?? student.amount_owing ?? 0,
             hasPaid: student.hasPaid,
             isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
             submitedBy: submittedBy,
           },
           create: {
-            classId: parseInt(classId.toString()),
-            payedBy: parseInt(student.paidBy),
+            classId: Number.parseInt(classId.toString()),
+            payedBy: Number.parseInt(student.paidBy),
             submitedAt: startOfDay,
-            amount: student.amount ?? student.amount_owing ?? 0,
+            amount: student.amount || student.amount_owing || 0,
             hasPaid: student.hasPaid,
             isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
             submitedBy: submittedBy,
@@ -386,15 +386,75 @@ export const recordService = {
 
   updateStudentStatus: async (
     id: number,
-    statusData: { hasPaid: boolean; isAbsent: boolean }
+    statusData: {
+      hasPaid: boolean;
+      isAbsent: boolean;
+      paymentAmount?: number; // Optional payment amount for partial payments
+    }
   ) => {
-    const { hasPaid, isAbsent } = statusData;
+    const { hasPaid, isAbsent, paymentAmount } = statusData;
 
     if (typeof hasPaid !== "boolean" || typeof isAbsent !== "boolean") {
       throw new ApiError(400, "Invalid input data");
     }
 
-    return recordRepository.updateStudentStatus(id, { hasPaid, isAbsent });
+    // Get the record
+    const record = await recordRepository.findById(id);
+    if (!record) {
+      throw new ApiError(404, "Record not found");
+    }
+
+    // Get the student
+    const student = await studentRepository.findById(record.payedBy || 0);
+    if (!student) {
+      throw new ApiError(404, "Student not found");
+    }
+
+    // Calculate the current owing amount
+    const currentOwing = student.owing;
+    let amountPaid = 0;
+    let newOwingAmount = currentOwing;
+
+    if (hasPaid) {
+      // If payment is made
+      if (paymentAmount !== undefined && paymentAmount > 0) {
+        // Partial payment
+        amountPaid = paymentAmount;
+
+        // Reduce the owing amount by the payment amount
+        newOwingAmount = Math.max(0, currentOwing - paymentAmount);
+      } else {
+        // Full payment for today
+        amountPaid = record.settingsAmount || 0;
+
+        // If they're paying for today, don't add to owing
+        // Just reduce existing owing if payment exceeds today's amount
+        if (
+          record.settingsAmount !== null &&
+          amountPaid > record.settingsAmount
+        ) {
+          const excess = amountPaid - record.settingsAmount;
+          newOwingAmount = Math.max(0, currentOwing - excess);
+        }
+      }
+    } else if (!isAbsent) {
+      // If not paid and not absent, the owing will be updated during the next day's record generation
+      // We don't need to update it here
+    }
+
+    // Update the student's owing amount
+    await studentRepository.update(student.id, {
+      owing: newOwingAmount,
+    });
+
+    // Update the record
+    return recordRepository.update(id, {
+      hasPaid,
+      isAbsent,
+      amount: amountPaid,
+      owingBefore: currentOwing,
+      owingAfter: newOwingAmount,
+    });
   },
 
   updateRecord: async (
@@ -423,23 +483,41 @@ export const recordService = {
       amount:
         amount !== undefined
           ? typeof amount === "string"
-            ? parseInt(amount)
+            ? Number.parseInt(amount)
             : amount
           : undefined,
-      submitedAt:
+      teacher:
         submitedBy !== undefined
-          ? typeof submitedBy === "string"
-            ? new Date(submitedBy)
-            : new Date(submitedBy)
+          ? {
+              connect: {
+                id:
+                  typeof submitedBy === "string"
+                    ? Number.parseInt(submitedBy)
+                    : submitedBy,
+              },
+            }
           : undefined,
-      // Removed 'payedBy' as it is not a valid property in 'RecordUpdateInput'
+      student:
+        payedBy !== undefined
+          ? {
+              connect: {
+                id:
+                  typeof payedBy === "string"
+                    ? Number.parseInt(payedBy)
+                    : payedBy,
+              },
+            }
+          : undefined,
       isPrepaid: isPrepaid !== undefined ? Boolean(isPrepaid) : undefined,
       hasPaid: hasPaid !== undefined ? Boolean(hasPaid) : undefined,
       class:
         classId !== undefined
           ? {
               connect: {
-                id: typeof classId === "string" ? parseInt(classId) : classId,
+                id:
+                  typeof classId === "string"
+                    ? Number.parseInt(classId)
+                    : classId,
               },
             }
           : undefined,

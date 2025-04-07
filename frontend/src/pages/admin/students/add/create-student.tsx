@@ -69,7 +69,7 @@ export default function AddStudent() {
                 id="name"
                 {...register("name", { required: true })}
                 autoComplete="off"
-                placeholder="Student's first name"
+                placeholder="Student's full name"
                 className="bg-transparent"
                 required
               />
