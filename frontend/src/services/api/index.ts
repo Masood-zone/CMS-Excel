@@ -49,7 +49,55 @@ export const updateTeacher = async (data: Teacher) => {
     throw error;
   }
 };
+/**
+ * Update Teacher
+ */
+export const updateAdmin = async (data: Admin) => {
+  try {
+    const response = await apiClient.patch(`/admins/${data.id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+};
 
+/**
+ * Fetch all admins.
+ */
+export const fetchAdmins = async () => {
+  try {
+    const response = await apiClient.get("/admins");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
+    throw error;
+  }
+};
+/**
+ * Fetch admin
+ */
+export const fetchAdmin = async (id: number) => {
+  try {
+    const response = await apiClient.get(`/admins/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching teacher:", error);
+    throw error;
+  }
+};
+/**
+ * Create Admin
+ */
+export const createAdmin = async (data: Admin) => {
+  try {
+    const response = await apiClient.post("/auth/signup", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating teacher:", error);
+    throw error;
+  }
+};
 /**
  * Fetch all teachers.
  */

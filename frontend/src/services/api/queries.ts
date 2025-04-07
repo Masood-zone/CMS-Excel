@@ -37,6 +37,10 @@ import {
   createRecordsAmount,
   getTeacherRecords,
   generateRecordForADate,
+  fetchAdmins,
+  fetchAdmin,
+  createAdmin,
+  updateAdmin,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -60,6 +64,28 @@ export const useFetchRecordsAmount = () => {
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch records amount.");
+    },
+  });
+};
+/**
+ * Query: Fetch all admins.
+ */
+export const useFetchAdmins = () => {
+  return useQuery(["administrators"], fetchAdmins, {
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch teachers.");
+    },
+  });
+};
+/**
+ * Query: Fetch Admin
+ */
+export const useFetchAdmin = (id: number) => {
+  return useQuery(["admin", id], () => fetchAdmin(id), {
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch teacher.");
     },
   });
 };
@@ -291,6 +317,47 @@ export const useUpdateUser = () => {
       };
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
+    },
+  });
+};
+
+/**
+ * Mutation: Create a Admin.
+ */
+export const useCreateAdmin = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  return useMutation((data: Admin) => createAdmin(data), {
+    onSuccess: () => {
+      toast.success("Admin created successfully!");
+      // Invalidate the query to refresh the table
+      queryClient.invalidateQueries(["administrators"]);
+      //Navigate to the teachers page after creating a teacher
+      navigate("/admin/administrators");
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to create admin. Please try again.");
+    },
+  });
+};
+/**
+ * Mutation: Update a teacher.
+ */
+export const useUpdateAdmin = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  return useMutation((data: Admin) => updateAdmin(data), {
+    onSuccess: () => {
+      toast.success("Admin updated successfully!");
+      // Invalidate the query to refresh the table
+      queryClient.invalidateQueries(["administrators"]);
+      //Navigate to the admin page after updating a teacher
+      navigate("/admin/administrators");
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to update admin. Please try again.");
     },
   });
 };

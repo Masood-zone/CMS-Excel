@@ -16,13 +16,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 
-export default function EditTeacherForm({
-  teacherData,
-  classList,
-}: {
-  teacherData: Teacher;
-  classList: Class[];
-}) {
+export default function EditAdminForm({ adminData }: { adminData: Admin }) {
   const [showPassword, setShowPassword] = useState(false);
   const { mutate: updateTeacher, isLoading } = useUpdateTeacher();
   const {
@@ -31,22 +25,18 @@ export default function EditTeacherForm({
     watch,
     handleSubmit,
     formState: { errors },
-  } = useForm<Teacher>();
+  } = useForm<Admin>();
 
   const gender = watch(
     "gender",
-    teacherData?.gender as "male" | "female" | undefined
+    adminData?.gender as "male" | "female" | undefined
   );
 
-  const onSubmit = async (data: Teacher) => {
+  const onSubmit = async (data: Admin) => {
     try {
       updateTeacher({
         ...data,
-        id: teacherData.id,
-        assigned_class: {
-          id: data.assigned_class?.id ?? 0,
-          name: data.assigned_class?.name ?? "",
-        },
+        id: adminData.id,
       });
     } catch (error) {
       console.error(error);
@@ -64,7 +54,7 @@ export default function EditTeacherForm({
             id="name"
             {...register("name")}
             autoComplete="off"
-            defaultValue={teacherData?.name}
+            defaultValue={adminData?.name}
             className="bg-transparent"
             required
           />
@@ -80,7 +70,7 @@ export default function EditTeacherForm({
             id="email"
             {...register("email")}
             autoComplete="off"
-            defaultValue={teacherData?.email}
+            defaultValue={adminData?.email}
             className="bg-transparent"
             required
           />
@@ -96,7 +86,7 @@ export default function EditTeacherForm({
             id="phone"
             {...register("phone")}
             autoComplete="off"
-            defaultValue={teacherData?.phone}
+            defaultValue={adminData?.phone}
             className="bg-transparent"
             required
           />
@@ -117,44 +107,13 @@ export default function EditTeacherForm({
           >
             <SelectTrigger className="bg-transparent">
               <SelectValue
-                placeholder={teacherData?.gender || "Male/Female"}
+                placeholder={adminData?.gender || "Male/Female"}
                 className="capitalize"
               />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="male">Male</SelectItem>
               <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Class */}
-        <div className="space-y-2">
-          <Label htmlFor="class">Class</Label>
-          <Select
-            value={teacherData?.assigned_class?.id?.toString()}
-            onValueChange={(value) => {
-              const selectedClass = classList.find(
-                (classItem) => classItem.id.toString() === value
-              );
-              setValue("assigned_class", selectedClass, {
-                shouldValidate: true,
-              });
-            }}
-            defaultValue=""
-          >
-            <SelectTrigger name="assigned_class" className="bg-transparent">
-              <SelectValue
-                placeholder={
-                  teacherData?.assigned_class?.name || "Select Class"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {classList?.map((classItem) => (
-                <SelectItem key={classItem.id} value={classItem.id.toString()}>
-                  {classItem.name}
-                </SelectItem>
-              ))}
             </SelectContent>
           </Select>
         </div>
@@ -169,7 +128,7 @@ export default function EditTeacherForm({
             id="password"
             autoComplete="off"
             placeholder="Password"
-            defaultValue={teacherData?.password}
+            defaultValue={adminData?.password}
             className="bg-transparent"
           />
           <span className="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 pt-3">

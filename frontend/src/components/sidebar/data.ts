@@ -13,6 +13,10 @@ export const super_nav = {
           url: "/admin",
         },
         {
+          title: "Administrators",
+          url: "/admin/administrators",
+        },
+        {
           title: "Teachers",
           url: "/admin/teachers",
         },

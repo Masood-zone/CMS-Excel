@@ -51,6 +51,20 @@ type RecordsAmount = {
   value?: string;
 };
 
+type Admin = {
+  id?: number;
+  name: string;
+  phone: string;
+  assigned_class?: {
+    id: number;
+    name: string;
+  };
+  role: string;
+  email: string;
+  gender: "male" | "female";
+  password?: string;
+};
+
 type Teacher = {
   id?: number;
   name: string;

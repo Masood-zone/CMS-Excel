@@ -157,6 +157,53 @@ const rootRoutes = createBrowserRouter(
             }}
           />
         </Route>
+        {/* Admins */}
+        <Route
+          path="administrators"
+          lazy={async () => {
+            const { default: AdministratorLayout } = await import(
+              "@/pages/admin/administrators/index.tsx"
+            );
+            return { Component: AdministratorLayout };
+          }}
+        >
+          <Route
+            index
+            lazy={async () => {
+              const { default: Administrators } = await import(
+                "@/pages/admin/administrators/administrators.tsx"
+              );
+              return { Component: Administrators };
+            }}
+          />
+          <Route
+            path="add"
+            lazy={async () => {
+              const { default: AddAdmin } = await import(
+                "@/pages/admin/administrators/add/create-admin.tsx"
+              );
+              return { Component: AddAdmin };
+            }}
+          />
+          <Route
+            path=":id"
+            lazy={async () => {
+              const { default: ViewAdmin } = await import(
+                "@/pages/admin/administrators/view/view-admin.tsx"
+              );
+              return { Component: ViewAdmin };
+            }}
+          />
+          <Route
+            path=":id/edit"
+            lazy={async () => {
+              const { default: EditAdmin } = await import(
+                "@/pages/admin/administrators/edit/edit-admin.tsx"
+              );
+              return { Component: EditAdmin };
+            }}
+          />
+        </Route>
         {/* Teachers */}
         <Route
           path="teachers"
