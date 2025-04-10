@@ -2,7 +2,7 @@ import { prisma } from "../client";
 import type { Prisma } from "@prisma/client";
 
 export const adminRepository = {
-  findAll: async (options?: { role?: string }) => {
+  findAllAdmins: async () => {
     return prisma.user.findMany({
       select: {
         id: true,
@@ -13,7 +13,9 @@ export const adminRepository = {
         gender: true,
         assigned_class: true,
       },
-      where: options?.role ? { role: { in: [options.role] } } : undefined,
+      where: {
+        role: { in: ["SUPER_ADMIN", "ADMIN"] },
+      },
     });
   },
 

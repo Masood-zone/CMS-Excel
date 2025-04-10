@@ -73,15 +73,16 @@ export const studentService = {
       throw new ApiError(404, "Student not found");
     }
 
-    // Get the last 30 days of records to show owing history
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Get the last 90 days of records to ensure we capture all relevant owing history
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    const records = await prisma.record.findMany({
+    // Get all records for this student in the time period
+    const allRecords = await prisma.record.findMany({
       where: {
         payedBy: id,
         submitedAt: {
-          gte: thirtyDaysAgo,
+          gte: ninetyDaysAgo,
         },
       },
       orderBy: {
@@ -89,10 +90,22 @@ export const studentService = {
       },
     });
 
+    // Filter records to only include those that:
+    // 1. Changed the owing amount (owingBefore != owingAfter)
+    // 2. Had a payment made (amount > 0)
+    // 3. Were marked as paid (hasPaid = true)
+    const owingHistoryRecords = allRecords.filter(
+      (record) =>
+        record.owingBefore !== record.owingAfter || // Owing amount changed
+        record.amount > 0 || // Payment was made
+        record.hasPaid // Record was marked as paid
+    );
+
     return {
       student,
       currentOwing: student.owing,
-      owingHistory: records.map((record) => ({
+      owingHistory: owingHistoryRecords.map((record) => ({
+        id: record.id,
         date: record.submitedAt,
         hasPaid: record.hasPaid,
         isAbsent: record.isAbsent,
@@ -100,9 +113,12 @@ export const studentService = {
         owingBefore: record.owingBefore,
         owingAfter: record.owingAfter,
         settingsAmount: record.settingsAmount,
+        // Add a description field to make the history more readable
+        description: getOwingRecordDescription(record),
       })),
     };
   },
+
   payStudentOwing: async (id: number, amount: number) => {
     const student = await studentRepository.findById(id);
     if (!student) {
@@ -194,3 +210,29 @@ export const studentService = {
     return studentRepository.delete(id);
   },
 };
+
+// Helper function to generate a human-readable description of the owing record
+function getOwingRecordDescription(record: {
+  hasPaid: boolean;
+  isAbsent: boolean;
+  amount: number;
+  owingBefore: number;
+  owingAfter: number;
+  settingsAmount?: number | null;
+}): string {
+  if (record.hasPaid && record.amount > 0) {
+    if (record.owingBefore > record.owingAfter) {
+      return `Payment of ${record.amount} against owing balance`;
+    } else {
+      return `Regular payment of ${record.amount}`;
+    }
+  } else if (record.isAbsent) {
+    return "Marked as absent";
+  } else if (record.owingAfter > record.owingBefore) {
+    return `Owing increased by ${record.owingAfter - record.owingBefore}`;
+  } else if (record.owingBefore > record.owingAfter) {
+    return `Owing decreased by ${record.owingBefore - record.owingAfter}`;
+  } else {
+    return "No change in owing amount";
+  }
+}

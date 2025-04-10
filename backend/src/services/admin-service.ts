@@ -4,7 +4,7 @@ import { ApiError } from "../utils/api-error";
 
 export const adminService = {
   getAllAdmins: async () => {
-    return adminRepository.findAll();
+    return adminRepository.findAllAdmins();
   },
 
   getAdminById: async (id: number) => {

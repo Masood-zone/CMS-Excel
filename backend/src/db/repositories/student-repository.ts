@@ -11,6 +11,9 @@ export const studentRepository = {
   findById: async (id: number) => {
     return prisma.student.findUnique({
       where: { id },
+      include: {
+        class: true,
+      },
     });
   },
 

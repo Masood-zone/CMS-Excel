@@ -58,8 +58,9 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
 export const generateDailyRecords = async (options: {
   classId?: number;
   date: Date;
+  skipOwingUpdate?: boolean;
 }) => {
-  const { classId, date } = options;
+  const { classId, date, skipOwingUpdate = false } = options;
   const formattedDate = new Date(date);
   formattedDate.setHours(0, 0, 0, 0);
 
@@ -106,29 +107,32 @@ export const generateDailyRecords = async (options: {
       include: { student: true },
     });
 
-    // Update owing amounts for students who didn't pay yesterday
-    for (const record of yesterdayRecords) {
-      if (!record.hasPaid && !record.isAbsent && record.student) {
-        // If student didn't pay yesterday and wasn't absent, add to their owing
-        const newOwingAmount =
-          record.student.owing + (record.settingsAmount || 0);
+    // Skip owing update if requested
+    if (!skipOwingUpdate) {
+      // Update owing amounts for students who didn't pay yesterday
+      for (const record of yesterdayRecords) {
+        if (!record.hasPaid && !record.isAbsent && record.student) {
+          // If student didn't pay yesterday and wasn't absent, add to their owing
+          const newOwingAmount =
+            record.student.owing + (record.settingsAmount || 0);
 
-        await prisma.student.update({
-          where: { id: record.student.id },
-          data: { owing: newOwingAmount },
-        });
+          await prisma.student.update({
+            where: { id: record.student.id },
+            data: { owing: newOwingAmount },
+          });
 
-        // Update yesterday's record to reflect the new owing amount
-        await prisma.record.update({
-          where: { id: record.id },
-          data: { owingAfter: newOwingAmount },
-        });
+          // Update yesterday's record to reflect the new owing amount
+          await prisma.record.update({
+            where: { id: record.id },
+            data: { owingAfter: newOwingAmount },
+          });
 
-        updatedOwings.push({
-          studentId: record.student.id,
-          previousOwing: record.student.owing,
-          newOwing: newOwingAmount,
-        });
+          updatedOwings.push({
+            studentId: record.student.id,
+            previousOwing: record.student.owing,
+            newOwing: newOwingAmount,
+          });
+        }
       }
     }
 

@@ -1,11 +1,13 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import cron from "node-cron";
+import { logger } from "../../utils/logger";
 
 const prisma = new PrismaClient();
 
 export const setupDailyRecordCreation = () => {
-  cron.schedule("05 16 * * *", async () => {
-    console.log("Running daily record creation job");
+  // Schedule the job to run every day at 11:11 PM
+  cron.schedule("10 11 * * *", async () => {
+    logger.info("Running daily record creation job");
 
     try {
       const today = new Date();
@@ -19,7 +21,7 @@ export const setupDailyRecordCreation = () => {
         where: { name: "amount" },
       });
 
-      const settingsAmount = settings ? parseInt(settings.value) : 0;
+      const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
 
       let createdRecords = 0;
       let skippedRecords = 0;
@@ -27,6 +29,13 @@ export const setupDailyRecordCreation = () => {
       for (const classItem of classes) {
         for (const student of classItem.students) {
           try {
+            // Get current owing amount for the student
+            const currentStudent = await prisma.student.findUnique({
+              where: { id: student.id },
+            });
+
+            const currentOwing = currentStudent?.owing || 0;
+
             await prisma.record.create({
               data: {
                 classId: classItem.id,
@@ -38,6 +47,9 @@ export const setupDailyRecordCreation = () => {
                 isAbsent: false,
                 settingsAmount,
                 submitedBy: classItem.supervisorId || classItem.id,
+                // Add the owing fields
+                owingBefore: currentOwing,
+                owingAfter: currentOwing, // Initially the same as owingBefore
               },
             });
             createdRecords++;
@@ -53,11 +65,11 @@ export const setupDailyRecordCreation = () => {
         }
       }
 
-      console.log(
+      logger.info(
         `Daily record creation job completed successfully. Created: ${createdRecords}, Skipped: ${skippedRecords}`
       );
     } catch (error) {
-      console.error("Error in daily record creation job:", error);
+      logger.error("Error in daily record creation job:", error);
     }
   });
 };
