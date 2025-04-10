@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { ApiError } from "../utils/api-error";
 import type { TeacherRecord } from "../types/record";
 import { prisma } from "../db/client";
+import { scheduleOwingUpdate } from "./owing-service";
 
 export const recordService = {
   getAllRecords: async () => {
@@ -352,34 +353,78 @@ export const recordService = {
 
     const allStudents = [...unpaidStudents, ...paidStudents, ...absentStudents];
 
-    const updatedRecords = await prisma.$transaction(
-      allStudents.map((student) =>
-        prisma.record.upsert({
-          where: {
-            payedBy_submitedAt: {
-              payedBy: Number.parseInt(student.paidBy),
-              submitedAt: startOfDay,
-            },
-          },
-          update: {
-            amount: student.amount ?? student.amount_owing ?? 0,
-            hasPaid: student.hasPaid,
-            isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
-            submitedBy: submittedBy,
-          },
-          create: {
-            classId: Number.parseInt(classId.toString()),
-            payedBy: Number.parseInt(student.paidBy),
+    // Get settings amount for today
+    const settings = await prisma.settings.findFirst({
+      where: { name: "amount" },
+    });
+    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+
+    // Process each student record but don't update owing amounts yet
+    const updatedRecords = [];
+    const studentsToUpdate = [];
+
+    for (const student of allStudents) {
+      const studentId = Number.parseInt(student.paidBy);
+      const isAbsent = absentStudents.some((s) => s.paidBy === student.paidBy);
+      const hasPaid = student.hasPaid;
+      const amount = student.amount || student.amount_owing || 0;
+
+      // Get current student data with owing amount
+      const currentStudent = await prisma.student.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!currentStudent) continue;
+
+      const currentOwing = currentStudent.owing;
+
+      // Create or update the record without changing the owing amount yet
+      const record = await prisma.record.upsert({
+        where: {
+          payedBy_submitedAt: {
+            payedBy: studentId,
             submitedAt: startOfDay,
-            amount: student.amount || student.amount_owing || 0,
-            hasPaid: student.hasPaid,
-            isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
-            submitedBy: submittedBy,
-            settingsAmount: student.amount || student.amount_owing,
           },
-        })
-      )
-    );
+        },
+        update: {
+          amount: amount,
+          hasPaid: hasPaid,
+          isAbsent: isAbsent,
+          submitedBy: submittedBy,
+          owingBefore: currentOwing,
+          owingAfter: currentOwing, // Initially the same as owingBefore
+        },
+        create: {
+          classId: Number.parseInt(classId.toString()),
+          payedBy: studentId,
+          submitedAt: startOfDay,
+          amount: amount,
+          hasPaid: hasPaid,
+          isAbsent: isAbsent,
+          submitedBy: submittedBy,
+          settingsAmount: settingsAmount,
+          owingBefore: currentOwing,
+          owingAfter: currentOwing, // Initially the same as owingBefore
+        },
+      });
+
+      updatedRecords.push(record);
+
+      // Add to list of students to update owing after 5 minutes
+      if (!hasPaid && !isAbsent) {
+        studentsToUpdate.push({
+          studentId,
+          recordId: record.id,
+          currentOwing,
+          settingsAmount,
+        });
+      }
+    }
+
+    // Schedule owing updates for #1 minute later
+    if (studentsToUpdate.length > 0) {
+      scheduleOwingUpdate(studentsToUpdate, 1 * 60 * 1000); // #1 minute in milliseconds
+    }
 
     return updatedRecords;
   },
@@ -410,51 +455,58 @@ export const recordService = {
       throw new ApiError(404, "Student not found");
     }
 
+    // Get settings amount
+    const settings = await prisma.settings.findFirst({
+      where: { name: "amount" },
+    });
+    const settingsAmount = settings
+      ? Number.parseInt(settings.value)
+      : record.settingsAmount || 0;
+
     // Calculate the current owing amount
     const currentOwing = student.owing;
     let amountPaid = 0;
-    let newOwingAmount = currentOwing;
 
     if (hasPaid) {
       // If payment is made
       if (paymentAmount !== undefined && paymentAmount > 0) {
         // Partial payment
         amountPaid = paymentAmount;
-
-        // Reduce the owing amount by the payment amount
-        newOwingAmount = Math.max(0, currentOwing - paymentAmount);
       } else {
         // Full payment for today
-        amountPaid = record.settingsAmount || 0;
-
-        // If they're paying for today, don't add to owing
-        // Just reduce existing owing if payment exceeds today's amount
-        if (
-          record.settingsAmount !== null &&
-          amountPaid > record.settingsAmount
-        ) {
-          const excess = amountPaid - record.settingsAmount;
-          newOwingAmount = Math.max(0, currentOwing - excess);
-        }
+        amountPaid = settingsAmount;
       }
-    } else if (!isAbsent) {
-      // If not paid and not absent, the owing will be updated during the next day's record generation
-      // We don't need to update it here
     }
 
-    // Update the student's owing amount
-    await studentRepository.update(student.id, {
-      owing: newOwingAmount,
-    });
-
-    // Update the record
-    return recordRepository.update(id, {
+    // Update the record without changing the owing amount yet
+    const updatedRecord = await recordRepository.update(id, {
       hasPaid,
       isAbsent,
       amount: amountPaid,
       owingBefore: currentOwing,
-      owingAfter: newOwingAmount,
+      owingAfter: currentOwing, // Initially the same as owingBefore
     });
+
+    // If changing to unpaid and not absent, schedule an owing update
+    if (!hasPaid && !isAbsent) {
+      scheduleOwingUpdate(
+        [
+          {
+            studentId: student.id,
+            recordId: id,
+            currentOwing,
+            settingsAmount,
+          },
+        ],
+        1 * 60 * 1000 // 1 minute in milliseconds
+      );
+    } else if (record.hasPaid === false && record.isAbsent === false) {
+      // If previously unpaid and not absent, but now paid or absent,
+      // cancel any pending owing updates for this record
+      // This would be implemented in the owing service
+    }
+
+    return updatedRecord;
   },
 
   updateRecord: async (
@@ -479,7 +531,14 @@ export const recordService = {
       isAbsent,
     } = recordData;
 
-    return recordRepository.update(id, {
+    // Get the current record to check if status is changing
+    const currentRecord = await recordRepository.findById(id);
+    if (!currentRecord) {
+      throw new ApiError(404, "Record not found");
+    }
+
+    // Update the record
+    const updatedRecord = await recordRepository.update(id, {
       amount:
         amount !== undefined
           ? typeof amount === "string"
@@ -523,6 +582,34 @@ export const recordService = {
           : undefined,
       isAbsent: isAbsent !== undefined ? Boolean(isAbsent) : undefined,
     });
+
+    // If status changed to unpaid and not absent, schedule an owing update
+    if (
+      hasPaid !== undefined &&
+      isAbsent !== undefined &&
+      !hasPaid &&
+      !isAbsent &&
+      (currentRecord.hasPaid || currentRecord.isAbsent)
+    ) {
+      const student = await studentRepository.findById(
+        currentRecord.payedBy || 0
+      );
+      if (student) {
+        scheduleOwingUpdate(
+          [
+            {
+              studentId: student.id,
+              recordId: id,
+              currentOwing: student.owing,
+              settingsAmount: currentRecord.settingsAmount || 0,
+            },
+          ],
+          1 * 60 * 1000 // 1 minutes in milliseconds
+        );
+      }
+    }
+
+    return updatedRecord;
   },
 
   deleteRecord: async (id: number) => {

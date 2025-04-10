@@ -93,6 +93,7 @@ model Record {
   classId        Int?
   owingBefore    Int      @default(0)  // Owing amount before this record
   owingAfter     Int      @default(0)  // Owing amount after this record
+  description    String?  // Optional description field for detailed information
   
   // Relations
   teacher        User     @relation(fields: [submitedBy], references: [id], onDelete: Cascade)
@@ -112,7 +113,6 @@ model Record {
   @@index([classId])
   @@index([submitedAt])
 }
-
 
 // OtpCodes model - stores one-time passwords for password reset
 model OtpCodes {

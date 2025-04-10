@@ -133,9 +133,18 @@ export const studentService = {
     const currentOwing = student.owing;
     const newOwingAmount = Math.max(0, currentOwing - amount);
 
+    // Calculate excess payment (if any)
+    const excessPayment = currentOwing < amount ? amount - currentOwing : 0;
+
     // Create a payment record
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    // Get settings amount for reference
+    const settings = await prisma.settings.findFirst({
+      where: { name: "amount" },
+    });
+    const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
 
     // Check if there's already a record for today
     const existingRecord = await prisma.record.findFirst({
@@ -148,6 +157,12 @@ export const studentService = {
       },
     });
 
+    // Create a payment description that includes details about the payment
+    const paymentDescription =
+      excessPayment > 0
+        ? `Payment of ${amount} GHC against owing of ${currentOwing} GHC (excess: ${excessPayment} GHC)`
+        : `Payment of ${amount} GHC against owing of ${currentOwing} GHC`;
+
     if (existingRecord) {
       // Update existing record
       await prisma.record.update({
@@ -157,15 +172,11 @@ export const studentService = {
           hasPaid: true,
           owingBefore: currentOwing,
           owingAfter: newOwingAmount,
+          description: paymentDescription,
         },
       });
     } else {
       // Create new record for the payment
-      const settings = await prisma.settings.findFirst({
-        where: { name: "amount" },
-      });
-      const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
-
       await prisma.record.create({
         data: {
           classId: student.classId,
@@ -185,6 +196,7 @@ export const studentService = {
             : 0,
           owingBefore: currentOwing,
           owingAfter: newOwingAmount,
+          description: paymentDescription,
         },
       });
     }
@@ -202,6 +214,7 @@ export const studentService = {
       paymentAmount: amount,
       previousOwing: currentOwing,
       newOwing: newOwingAmount,
+      excessPayment: excessPayment,
       fullyPaid: newOwingAmount === 0,
     };
   },
@@ -219,7 +232,13 @@ function getOwingRecordDescription(record: {
   owingBefore: number;
   owingAfter: number;
   settingsAmount?: number | null;
+  description?: string | null;
 }): string {
+  // If the record has a custom description, use that
+  if (record.description) {
+    return record.description;
+  }
+
   if (record.hasPaid && record.amount > 0) {
     if (record.owingBefore > record.owingAfter) {
       return `Payment of ${record.amount} against owing balance`;

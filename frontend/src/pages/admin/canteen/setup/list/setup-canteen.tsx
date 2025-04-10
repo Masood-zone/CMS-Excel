@@ -5,6 +5,7 @@ import {
   useStudentRecordsByClassAndDate,
   useUpdateStudentStatus,
   useSubmitTeacherRecord,
+  useGenerateStudentRecords,
 } from "@/services/api/queries";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,6 +37,8 @@ export default function SetupCanteen() {
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
   const { data: studentRecords, isLoading: recordsLoading } =
     useStudentRecordsByClassAndDate(parseInt(selectedClassId), formattedDate);
+  const { mutate: generateRecords, isLoading: isGenerating } =
+    useGenerateStudentRecords();
   const { mutate: updateStatus, isLoading: updatingLoader } =
     useUpdateStudentStatus();
   const { mutate: submitRecord, isLoading: submittingRecord } =
@@ -70,6 +73,13 @@ export default function SetupCanteen() {
       console.error(error);
       toast.error("Failed to update student status");
     }
+  };
+
+  const handleGenerateRecords = () => {
+    generateRecords({
+      classId: parseInt(selectedClassId),
+      date: selectedDate.toISOString(),
+    });
   };
 
   const handleSubmitCanteen = async () => {
@@ -174,6 +184,9 @@ export default function SetupCanteen() {
             />
           </PopoverContent>
         </Popover>
+        <Button onClick={handleGenerateRecords} disabled={isGenerating}>
+          {isGenerating ? "Generating..." : "Generate Records"}
+        </Button>
       </div>
       {classesLoading || recordsLoading ? (
         <TableSkeleton />
