@@ -432,6 +432,41 @@ export const fetchTeacherOwingStudents = async (teacherId: number) => {
 };
 
 /**
+ * Fetch students in teacher's class
+ */
+export const fetchTeacherClassStudents = async (teacherId: number) => {
+  try {
+    const response = await apiClient.get(
+      `/teachers/${teacherId}/owing-students`
+    );
+    return response.data.owingStudents;
+    // if (classData && classData.id) {
+    //   const studentsResponse = await apiClient.get(
+    //     `/students/class/${classData.id}`
+    //   );
+    //   return studentsResponse.data;
+    // }
+    // return [];
+  } catch (error) {
+    console.error("Error fetching students in teacher's class:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch student owing details
+ */
+export const fetchStudentOwingDetails = async (studentId: number) => {
+  try {
+    const response = await apiClient.get(`/students/${studentId}/owing`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching student owing details:", error);
+    throw error;
+  }
+};
+
+/**
  * Pay student owing
  */
 export const payStudentOwing = async (studentId: number, amount: number) => {

@@ -611,6 +611,24 @@ const rootRoutes = createBrowserRouter(
             }}
           />
           <Route
+            path="owing-students"
+            lazy={async () => {
+              const { default: OwingStudents } = await import(
+                "@/pages/teacher/students/owings/owing-students.tsx"
+              );
+              return { Component: OwingStudents };
+            }}
+          />
+          <Route
+            path="owing-students/:id"
+            lazy={async () => {
+              const { default: OwingStudentDetails } = await import(
+                "@/pages/teacher/students/owings/[id]/owing-student.tsx"
+              );
+              return { Component: OwingStudentDetails };
+            }}
+          />
+          <Route
             path=":id"
             lazy={async () => {
               const { default: ViewStudent } = await import(
@@ -629,6 +647,7 @@ const rootRoutes = createBrowserRouter(
             }}
           />
         </Route>
+
         <Route
           path="*"
           lazy={async () => {

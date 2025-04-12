@@ -94,6 +94,10 @@ export const teacher_nav = {
           url: "/teacher/canteen",
         },
         {
+          title: "Owings",
+          url: "/teacher/students/owing-students",
+        },
+        {
           title: "Students",
           url: "/teacher/students",
         },
