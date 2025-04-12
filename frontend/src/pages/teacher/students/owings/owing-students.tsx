@@ -73,10 +73,10 @@ export default function OwingStudents() {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-2xl font-bold">
-                Class Students
+                Owing Students
               </CardTitle>
               <CardDescription className="text-base mt-1">
-                View all students in your class and their details
+                View all students who are owing in your class and their details
               </CardDescription>
             </div>
           </div>

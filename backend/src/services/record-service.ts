@@ -410,7 +410,7 @@ export const recordService = {
 
       updatedRecords.push(record);
 
-      // Add to list of students to update owing after 5 minutes
+      // Add to list of students to update owing after 1 minutes
       if (!hasPaid && !isAbsent) {
         studentsToUpdate.push({
           studentId,
