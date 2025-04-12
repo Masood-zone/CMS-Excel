@@ -30,6 +30,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CanteenTable } from "@/components/tables/canteen-table";
 import { ColumnDef } from "@tanstack/react-table";
+import OwingsPage from "./owings";
 
 export default function Canteen() {
   const navigate = useNavigate();
@@ -208,17 +209,22 @@ export default function Canteen() {
             {isGenerating ? "Generating..." : "Generate Records"}
           </Button>
         </div>
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs defaultValue="canteen" className="w-full">
           <TabsList>
-            <TabsTrigger value="all">Students</TabsTrigger>
+            <TabsTrigger value="canteen">Canteen</TabsTrigger>
+            <TabsTrigger value="owings">Owings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all">
+          <TabsContent value="canteen">
             <CanteenTable
               columns={columns}
               data={studentRecords || []}
               searchField="student.name"
             />
+          </TabsContent>
+
+          <TabsContent value="owings">
+            <OwingsPage />
           </TabsContent>
         </Tabs>
       </div>

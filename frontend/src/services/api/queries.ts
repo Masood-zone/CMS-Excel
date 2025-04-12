@@ -41,6 +41,8 @@ import {
   fetchAdmin,
   createAdmin,
   updateAdmin,
+  payStudentOwing,
+  fetchTeacherOwingStudents,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -600,6 +602,43 @@ export const useStudentRecordsByClassAndDate = (
       onError: (error) => {
         console.error(error);
         toast.error("Failed to fetch student records.");
+      },
+    }
+  );
+};
+
+/**
+ * Query: Fetch owing students in teacher's class
+ */
+export const useFetchTeacherOwingStudents = (teacherId: number) => {
+  return useQuery(
+    ["teacherOwingStudents", teacherId],
+    () => fetchTeacherOwingStudents(teacherId),
+    {
+      onError: (error) => {
+        console.error(error);
+        toast.error("Failed to fetch owing students.");
+      },
+    }
+  );
+};
+
+/**
+ * Mutation: Pay student owing
+ */
+export const usePayStudentOwing = () => {
+  const queryClient = useQueryClient();
+  return useMutation(
+    ({ studentId, amount }: { studentId: number; amount: number }) =>
+      payStudentOwing(studentId, amount),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(["teacherOwingStudents"]);
+        toast.success("Payment processed successfully!");
+      },
+      onError: (error) => {
+        console.error(error);
+        toast.error("Failed to process payment. Please try again.");
       },
     }
   );

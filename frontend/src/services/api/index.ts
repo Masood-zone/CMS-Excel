@@ -415,6 +415,37 @@ export const getStudentRecordsByClassAndDate = async (
     throw error;
   }
 };
+
+/**
+ * Fetch owing students in teacher's class
+ */
+export const fetchTeacherOwingStudents = async (teacherId: number) => {
+  try {
+    const response = await apiClient.get(
+      `/teachers/${teacherId}/owing-students`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching owing students:", error);
+    throw error;
+  }
+};
+
+/**
+ * Pay student owing
+ */
+export const payStudentOwing = async (studentId: number, amount: number) => {
+  try {
+    const response = await apiClient.post(`/students/${studentId}/pay`, {
+      amount,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error paying student owing:", error);
+    throw error;
+  }
+};
+
 //Mutation: Generate records for students based on classID and date
 export const generateRecordForADate = async (classId: number, date: string) => {
   try {

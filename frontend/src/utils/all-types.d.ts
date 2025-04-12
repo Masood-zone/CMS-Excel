@@ -40,10 +40,34 @@ type Student = {
   gender: "male" | "female";
   hasPaid?: boolean;
   amount?: number;
+  owing?: number;
   settingsAmount?: number;
   paidBy?: number;
   class?: string;
 };
+
+interface OwingStudentsResponse {
+  class: {
+    id: number;
+    name: string;
+    description: string;
+    supervisorId: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  owingStudents: OwingStudent[];
+  totalOwing: number;
+  count: number;
+}
+
+interface PaymentResponse {
+  student: OwingStudent;
+  paymentAmount: number;
+  previousOwing: number;
+  newOwing: number;
+  excessPayment: number;
+  fullyPaid: boolean;
+}
 
 type RecordsAmount = {
   id?: number;
