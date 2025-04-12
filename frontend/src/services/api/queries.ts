@@ -806,6 +806,26 @@ export const useTeacherRecords = (date: string) => {
 };
 
 /**
+ * Query: Fetch owing students by class
+ */
+export const useFetchOwingStudentsByClass = (classId?: number) => {
+  return useQuery({
+    queryKey: ["owingStudentsByClass", classId],
+    queryFn: () =>
+      classId
+        ? apiClient
+            .get(`/students/class/${classId}/owing`)
+            .then((res) => res.data)
+        : apiClient.get("/admins/owing-students").then((res) => res.data),
+    enabled: classId !== undefined,
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch owing students for this class.");
+    },
+  });
+};
+
+/**
  * Mutation: Update a student status.
  *
  */

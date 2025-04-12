@@ -359,12 +359,22 @@ const rootRoutes = createBrowserRouter(
           <Route
             path="setup-canteen"
             lazy={async () => {
-              const { default: SetupCanteen } = await import(
-                "@/pages/admin/canteen/setup/list/setup-canteen.tsx"
+              const { default: SetupCanteenLayout } = await import(
+                "@/pages/admin/canteen/setup/index.tsx"
               );
-              return { Component: SetupCanteen };
+              return { Component: SetupCanteenLayout };
             }}
-          />
+          >
+            <Route
+              index
+              lazy={async () => {
+                const { default: SetupCanteenTabs } = await import(
+                  "@/pages/admin/canteen/setup/setup.tsx"
+                );
+                return { Component: SetupCanteenTabs };
+              }}
+            />
+          </Route>
           {/* View list of canteen records */}
           <Route
             index
@@ -382,6 +392,35 @@ const rootRoutes = createBrowserRouter(
                 "@/pages/admin/canteen/details/records-detail.tsx"
               );
               return { Component: TeacherRecordsDetail };
+            }}
+          />
+        </Route>
+        {/* Owings */}
+        <Route
+          path="owings"
+          lazy={async () => {
+            const { default: OwingsLayout } = await import(
+              "@/pages/admin/canteen"
+            );
+            return { Component: OwingsLayout };
+          }}
+        >
+          <Route
+            index
+            lazy={async () => {
+              const { default: Owings } = await import(
+                "@/pages/admin/canteen/owings/owings.tsx"
+              );
+              return { Component: Owings };
+            }}
+          />
+          <Route
+            path=":id"
+            lazy={async () => {
+              const { default: StudentOwingDetails } = await import(
+                "@/pages/admin/canteen/owings/[id]/student-owing-details.tsx"
+              );
+              return { Component: StudentOwingDetails };
             }}
           />
         </Route>

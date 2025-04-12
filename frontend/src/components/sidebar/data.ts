@@ -53,6 +53,10 @@ export const super_nav = {
           url: "/admin/canteen-records",
         },
         {
+          title: "Owing Records",
+          url: "/admin/owings",
+        },
+        {
           title: "Expenses",
           url: "/admin/expenses",
         },

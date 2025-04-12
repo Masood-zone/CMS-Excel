@@ -43,7 +43,7 @@ type Student = {
   owing?: number;
   settingsAmount?: number;
   paidBy?: number;
-  class?: string;
+  class?: Class;
 };
 
 interface OwingStudentsResponse {
