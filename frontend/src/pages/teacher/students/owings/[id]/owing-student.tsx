@@ -91,7 +91,7 @@ export default function OwingStudentDetails() {
   const { student, currentOwing, owingHistory } = studentDetails;
 
   return (
-    <div className="container mx-auto py-10 space-y-6">
+    <div className="container mx-auto space-y-6">
       {/* Header with Back Button */}
       <div className="flex items-center gap-4 mb-6">
         <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
