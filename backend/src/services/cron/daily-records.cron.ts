@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export const setupDailyRecordCreation = () => {
   // Schedule the job to run every day at 11:11 PM
-  cron.schedule("10 11 * * *", async () => {
+  cron.schedule("45 09 * * *", async () => {
     logger.info("Running daily record creation job");
 
     try {
@@ -25,6 +25,7 @@ export const setupDailyRecordCreation = () => {
 
       let createdRecords = 0;
       let skippedRecords = 0;
+      let skippedOwingStudents = 0;
 
       for (const classItem of classes) {
         for (const student of classItem.students) {
@@ -35,6 +36,15 @@ export const setupDailyRecordCreation = () => {
             });
 
             const currentOwing = currentStudent?.owing || 0;
+
+            // Skip record generation for students who are owing
+            if (currentOwing > 0) {
+              skippedOwingStudents++;
+              logger.info(
+                `Skipped record generation for student ${student.id} with owing amount ${currentOwing}`
+              );
+              continue;
+            }
 
             await prisma.record.create({
               data: {
@@ -66,7 +76,7 @@ export const setupDailyRecordCreation = () => {
       }
 
       logger.info(
-        `Daily record creation job completed successfully. Created: ${createdRecords}, Skipped: ${skippedRecords}`
+        `Daily record creation job completed successfully. Created: ${createdRecords}, Skipped due to existing records: ${skippedRecords}, Skipped due to owing: ${skippedOwingStudents}`
       );
     } catch (error) {
       logger.error("Error in daily record creation job:", error);

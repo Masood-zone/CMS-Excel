@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
@@ -13,6 +13,14 @@ export const generateRecordsForNewStudent = async (studentId: number) => {
     if (!student || !student.class) {
       logger.error(
         `Student with id ${studentId} not found or not assigned to a class`
+      );
+      return;
+    }
+
+    // Skip record generation if student has owing amount
+    if (student.owing > 0) {
+      logger.info(
+        `Skipped record generation for new student ${studentId} with owing amount ${student.owing}`
       );
       return;
     }
@@ -77,6 +85,7 @@ export const generateDailyRecords = async (options: {
 
   const createdRecords = [];
   const skippedRecords = [];
+  const skippedOwingStudents = [];
   const updatedOwings = [];
 
   // Generate records for each student in each class
@@ -146,6 +155,15 @@ export const generateDailyRecords = async (options: {
 
         const currentOwing = currentStudent?.owing || 0;
 
+        // Skip record generation for students who are owing
+        if (currentOwing > 0) {
+          skippedOwingStudents.push({
+            studentId: student.id,
+            owing: currentOwing,
+          });
+          continue;
+        }
+
         const record = await prisma.record.create({
           data: {
             classId: classItem.id,
@@ -181,6 +199,7 @@ export const generateDailyRecords = async (options: {
   return {
     createdRecords: createdRecords.length,
     skippedRecords,
+    skippedOwingStudents,
     updatedOwings,
   };
 };

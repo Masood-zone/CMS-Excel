@@ -219,6 +219,41 @@ export const studentService = {
     };
   },
 
+  // New method to get owing students by class ID
+  getOwingStudentsByClassId: async (classId: number) => {
+    return prisma.student.findMany({
+      where: {
+        classId,
+        owing: {
+          gt: 0, // Only students with owing > 0
+        },
+      },
+      orderBy: {
+        owing: "desc", // Order by owing amount (highest first)
+      },
+      include: {
+        class: true,
+      },
+    });
+  },
+
+  // New method to get all owing students
+  getAllOwingStudents: async () => {
+    return prisma.student.findMany({
+      where: {
+        owing: {
+          gt: 0, // Only students with owing > 0
+        },
+      },
+      orderBy: {
+        owing: "desc", // Order by owing amount (highest first)
+      },
+      include: {
+        class: true,
+      },
+    });
+  },
+
   deleteStudent: async (id: number) => {
     return studentRepository.delete(id);
   },

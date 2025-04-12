@@ -18,6 +18,15 @@ export const teacherController = {
     res.status(200).json(result);
   }),
 
+  getOwingStudentsInClass: catchAsync(async (req: Request, res: Response) => {
+    const id = Number.parseInt(req.params.id);
+    if (isNaN(id)) {
+      throw new ApiError(400, "Invalid teacher ID");
+    }
+    const result = await teacherService.getOwingStudentsInTeacherClass(id);
+    res.json(result);
+  }),
+
   getTeacherRecords: catchAsync(async (req: Request, res: Response) => {
     const id = Number.parseInt(req.params.id);
     if (isNaN(id)) {

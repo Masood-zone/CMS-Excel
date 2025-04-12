@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { adminService } from "../../services/admin-service";
+import { catchAsync } from "../../utils/catch-async";
+import { ApiError } from "../../utils/api-error";
 
 export const adminController = {
   getAdmins: async (req: Request, res: Response) => {
@@ -12,6 +14,22 @@ export const adminController = {
     const admin = await adminService.getAdminById(id);
     res.json(admin);
   },
+
+  // New endpoint to get all owing students
+  getAllOwingStudents: catchAsync(async (req: Request, res: Response) => {
+    const result = await adminService.getAllOwingStudents();
+    res.json(result);
+  }),
+
+  // New endpoint to get owing students by class
+  getOwingStudentsByClass: catchAsync(async (req: Request, res: Response) => {
+    const classId = Number.parseInt(req.params.classId);
+    if (isNaN(classId)) {
+      throw new ApiError(400, "Invalid class ID");
+    }
+    const result = await adminService.getOwingStudentsByClass(classId);
+    res.json(result);
+  }),
 
   create: async (req: Request, res: Response) => {
     const newAdmin = await adminService.createAdmin(req.body);

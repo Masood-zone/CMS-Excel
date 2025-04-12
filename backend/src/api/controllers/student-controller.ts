@@ -15,6 +15,19 @@ export const studentController = {
     res.json(student);
   }),
 
+   // New endpoint to get owing students by class
+   getOwingStudentsByClass: catchAsync(async (req: Request, res: Response) => {
+    const classId = Number.parseInt(req.params.classId)
+    const owingStudents = await studentService.getOwingStudentsByClassId(classId)
+    res.json(owingStudents)
+  }),
+
+  // New endpoint to get all owing students
+  getAllOwingStudents: catchAsync(async (req: Request, res: Response) => {
+    const owingStudents = await studentService.getAllOwingStudents()
+    res.json(owingStudents)
+  }),
+
   getClassById: catchAsync(async (req: Request, res: Response) => {
     const classId = Number.parseInt(req.params.classId);
     const students = await studentService.getStudentsByClassId(classId);

@@ -1,6 +1,7 @@
 import { create } from "domain";
 import { adminRepository } from "../db/repositories/admin-repository";
 import { ApiError } from "../utils/api-error";
+import { prisma } from "../db/client";
 
 export const adminService = {
   getAllAdmins: async () => {
@@ -13,6 +14,68 @@ export const adminService = {
       throw new ApiError(404, "Admin not found");
     }
     return admin;
+  },
+
+  // Get all owing students across all classes
+  getAllOwingStudents: async () => {
+    const owingStudents = await prisma.student.findMany({
+      where: {
+        owing: {
+          gt: 0, // Only students with owing > 0
+        },
+      },
+      orderBy: {
+        owing: "desc", // Order by owing amount (highest first)
+      },
+      include: {
+        class: true,
+      },
+    });
+
+    return {
+      owingStudents,
+      totalOwing: owingStudents.reduce(
+        (sum, student) => sum + student.owing,
+        0
+      ),
+      count: owingStudents.length,
+    };
+  },
+
+  // Get owing students in a specific class
+  getOwingStudentsByClass: async (classId: number) => {
+    const classData = await prisma.class.findUnique({
+      where: { id: classId },
+    });
+
+    if (!classData) {
+      throw new ApiError(404, "Class not found");
+    }
+
+    const owingStudents = await prisma.student.findMany({
+      where: {
+        classId,
+        owing: {
+          gt: 0, // Only students with owing > 0
+        },
+      },
+      orderBy: {
+        owing: "desc", // Order by owing amount (highest first)
+      },
+      include: {
+        class: true,
+      },
+    });
+
+    return {
+      class: classData,
+      owingStudents,
+      totalOwing: owingStudents.reduce(
+        (sum, student) => sum + student.owing,
+        0
+      ),
+      count: owingStudents.length,
+    };
   },
 
   getAdminByEmail: async (email: string) => {

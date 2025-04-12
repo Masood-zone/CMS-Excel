@@ -10,6 +10,7 @@ router.get("/", teacherController.getAllTeachers);
 router.get("/summary", teacherController.getTeachersWithRecordsSummary);
 router.get("/:teacherId/detail", teacherController.getTeacherRecordsDetail);
 router.get("/:id", teacherController.getTeachersById);
+router.get("/:id/owing-students", teacherController.getOwingStudentsInClass);
 router.get("/:id/records", teacherController.getTeacherRecords);
 router.post("/", teacherController.createTeacher);
 router.patch("/:id", teacherController.updateTeacher);

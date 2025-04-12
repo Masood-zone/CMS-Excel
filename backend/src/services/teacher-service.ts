@@ -64,6 +64,42 @@ export const teacherService = {
       data: newTeacher,
     };
   },
+  getOwingStudentsInTeacherClass: async (teacherId: number) => {
+    // First, find the class supervised by this teacher
+    const teacherClass = await prisma.class.findFirst({
+      where: { supervisorId: teacherId },
+    });
+
+    if (!teacherClass) {
+      throw new ApiError(404, "No class found for this teacher");
+    }
+
+    // Then, find all students in this class who have owing > 0
+    const owingStudents = await prisma.student.findMany({
+      where: {
+        classId: teacherClass.id,
+        owing: {
+          gt: 0, // Only students with owing > 0
+        },
+      },
+      orderBy: {
+        owing: "desc", // Order by owing amount (highest first)
+      },
+      include: {
+        class: true,
+      },
+    });
+
+    return {
+      class: teacherClass,
+      owingStudents,
+      totalOwing: owingStudents.reduce(
+        (sum, student) => sum + student.owing,
+        0
+      ),
+      count: owingStudents.length,
+    };
+  },
 
   updateTeacher: async (
     id: number,
