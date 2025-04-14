@@ -6,7 +6,10 @@ const prisma = new PrismaClient();
 
 export const setupDailyRecordCreation = () => {
   // Schedule the job to run every day at 11:11 PM
-  cron.schedule("45 09 * * *", async () => {
+  const hours = process.env.DAILY_RECORD_HOUR || "00";
+  const minutes = process.env.DAILY_RECORD_MINUTE || "06";
+
+  cron.schedule(`${minutes} ${hours} * * *`, async () => {
     logger.info("Running daily record creation job");
 
     try {
