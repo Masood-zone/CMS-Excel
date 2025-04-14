@@ -42,12 +42,9 @@ export default function StudentOwingDetails() {
     payOwing(
       { studentId, amount },
       {
-        onSuccess: (data) => {
+        onSuccess: () => {
           setPaymentAmount("");
-          toast.success(`Payment of ₵${amount} processed successfully`);
-          if (data.fullyPaid) {
-            toast.success("Student has fully paid their owing amount!");
-          }
+          // toast.success(`Payment of ₵${amount} processed successfully`);
         },
       }
     );
@@ -153,8 +150,8 @@ export default function StudentOwingDetails() {
                       <Input
                         id="payment"
                         type="number"
-                        min="0"
-                        step="0.01"
+                        min="1"
+                        step="1"
                         placeholder="Enter amount"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}

@@ -761,6 +761,9 @@ export const usePayStudentOwing = () => {
         queryKey: ["teacherOwingStudents"],
       });
       queryClient.invalidateQueries({
+        queryKey: ["owingStudents"],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["studentOwingDetails", data.student?.id],
       });
       toast.success("Payment processed successfully!");

@@ -22,15 +22,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
-import { ExternalLink, DollarSign, Users, Calculator } from "lucide-react";
-
-interface Class {
-  id: number;
-  name: string;
-}
+import { ExternalLink, Users, Calculator } from "lucide-react";
 
 export default function Owings() {
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("all");
   const navigate = useNavigate();
 
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
@@ -44,7 +39,7 @@ export default function Owings() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-5">
       <div className="mb-6">
         <h2 className="text-2xl font-bold">Student Owings</h2>
         <p className="text-muted-foreground">
@@ -73,7 +68,7 @@ export default function Owings() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center">
-              <DollarSign className="h-4 w-4 mr-2" />
+              <span className="h-4 w-4 mr-2">₵</span>
               Total Owing
             </CardTitle>
           </CardHeader>

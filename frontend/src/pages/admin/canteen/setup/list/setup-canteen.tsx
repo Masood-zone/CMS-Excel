@@ -130,14 +130,8 @@ export default function SetupCanteen() {
   };
 
   return (
-    <section className="container mx-auto py-10 px-5">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Canteen Setup</h1>
-          <p className="text-muted-foreground">
-            Setup canteen records for students in a class
-          </p>
-        </div>
+    <section className="container mx-auto">
+      <div className="flex justify-end mb-6">
         <Button
           onClick={handleSubmitCanteen}
           disabled={!selectedClassId || submittingRecord}
