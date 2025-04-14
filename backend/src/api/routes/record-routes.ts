@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get("/", recordController.getAllRecords);
+router.get("/dashboard-summary", recordController.getDashboardSummary);
 router.post("/generate-daily", recordController.generateDailyRecords);
 router.get("/teachers", recordController.getAllTeacherSubmittedRecords);
 router.get("/:classId", recordController.getStudentRecordsByClassAndDate);

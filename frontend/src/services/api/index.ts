@@ -12,6 +12,15 @@ export const fetchRecords = async () => {
     throw error;
   }
 };
+export const fetchDashboardSummary = async () => {
+  try {
+    const response = await apiClient.get("/records/dashboard-summary");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching records:", error);
+    throw error;
+  }
+};
 /**
  * Fetch canteen amount.
  */

@@ -13,6 +13,57 @@ export const recordService = {
     return recordRepository.findAll();
   },
 
+  getDashboardSummary: async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get all records for today
+    const records = await prisma.record.findMany({
+      where: {
+        submitedAt: {
+          gte: today,
+        },
+      },
+      include: {
+        student: true,
+        class: true,
+      },
+    });
+
+    // Calculate summary statistics
+    const paidStudents = records.filter((record) => record.hasPaid);
+    const unpaidStudents = records.filter(
+      (record) => !record.hasPaid && !record.isAbsent
+    );
+    const absentStudents = records.filter((record) => record.isAbsent);
+
+    const totalPaid = paidStudents.reduce(
+      (sum, record) => sum + (record.settingsAmount || 0),
+      0
+    );
+    const totalUnpaid = unpaidStudents.reduce(
+      (sum, record) => sum + (record.settingsAmount || 0),
+      0
+    );
+    const totalAmount = records.reduce(
+      (sum, record) => sum + (record.settingsAmount || 0),
+      0
+    );
+
+    return {
+      summary: {
+        totalAmount,
+        totalStudents: records.length,
+        totalPaid,
+        totalUnpaid,
+        paidStudentsCount: paidStudents.length,
+        unpaidStudentsCount: unpaidStudents.length,
+        absentStudentsCount: absentStudents.length,
+      },
+      records,
+    };
+  },
+
   generateDailyRecords: async (options: { classId?: number; date: Date }) => {
     const { classId, date } = options;
     const formattedDate = new Date(date);

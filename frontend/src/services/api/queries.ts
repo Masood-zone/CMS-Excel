@@ -46,6 +46,7 @@ import {
   fetchTeacherClassStudents,
   fetchStudentOwingDetails,
   fetchAllOwingStudents,
+  fetchDashboardSummary,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,16 @@ export const useFetchRecords = () => {
   return useQuery({
     queryKey: ["records"],
     queryFn: fetchRecords,
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch records.");
+    },
+  });
+};
+export const useFetchDashboardSummary = () => {
+  return useQuery({
+    queryKey: ["dashboardSummary"],
+    queryFn: fetchDashboardSummary,
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch records.");

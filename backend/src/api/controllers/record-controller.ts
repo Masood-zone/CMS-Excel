@@ -9,6 +9,11 @@ export const recordController = {
     res.status(200).json(records);
   }),
 
+  getDashboardSummary: catchAsync(async (req: Request, res: Response) => {
+    const summary = await recordService.getDashboardSummary();
+    res.status(200).json(summary);
+  }),
+
   generateDailyRecords: catchAsync(async (req: Request, res: Response) => {
     const classId = req.params.classId
       ? Number.parseInt(req.params.classId)

@@ -1,34 +1,14 @@
-import { useFetchRecords } from "@/services/api/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useFetchDashboardSummary } from "@/services/api/queries";
 import { Users, CreditCard, Receipt, Loader2 } from "lucide-react";
 
 export default function OverallTotals() {
-  const { data: overall, error, isLoading } = useFetchRecords();
+  const { data, error, isLoading } = useFetchDashboardSummary();
 
   if (isLoading) return <Loader2 className="h-8 w-8 animate-spin" />;
-  if (error) return <div>Error fetching records</div>;
+  if (error) return <div>Error fetching dashboard summary</div>;
 
-  const filterPaidStudents = overall?.filter(
-    (student: Student) => student.hasPaid === true
-  );
-  const filterUnpaidStudents = overall?.filter(
-    (student: Student) => student.hasPaid === false
-  );
-
-  const totalPaid = filterPaidStudents?.reduce(
-    (sum: number, student: Student) => sum + (student?.settingsAmount ?? 0),
-    0
-  );
-
-  const totalUnpaid = filterUnpaidStudents?.reduce(
-    (sum: number, student: Student) => sum + (student?.settingsAmount ?? 0),
-    0
-  );
-
-  const totalAmount = overall?.reduce(
-    (sum: number, student: Student) => sum + (student?.settingsAmount ?? 0),
-    0
-  );
+  const summary = data?.summary;
 
   return (
     <section className="p-5">
@@ -40,10 +20,10 @@ export default function OverallTotals() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              Ghc{totalAmount}
+              Ghc{summary?.totalAmount || 0}
             </div>
             <p className="text-base pt-2 text-muted-foreground">
-              From {overall?.length} students
+              From {summary?.totalStudents || 0} students
             </p>
           </CardContent>
         </Card>
@@ -55,13 +35,15 @@ export default function OverallTotals() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{overall?.length}</div>
+            <div className="text-2xl font-bold">
+              {summary?.totalStudents || 0}
+            </div>
             <p className="text-base pt-2 text-muted-foreground">
               <span className="text-primary">
-                {filterPaidStudents?.length} paid,{" "}
+                {summary?.paidStudentsCount || 0} paid,{" "}
               </span>
               <span className="text-destructive">
-                {filterUnpaidStudents?.length} unpaid
+                {summary?.unpaidStudentsCount || 0} unpaid
               </span>
             </p>
           </CardContent>
@@ -73,10 +55,10 @@ export default function OverallTotals() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
-              Ghc{totalPaid}
+              Ghc{summary?.totalPaid || 0}
             </div>
             <p className="text-base pt-2 text-muted-foreground">
-              From {filterPaidStudents?.length} students
+              From {summary?.paidStudentsCount || 0} students
             </p>
           </CardContent>
         </Card>
@@ -87,10 +69,10 @@ export default function OverallTotals() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              -Ghc{totalUnpaid}
+              -Ghc{summary?.totalUnpaid || 0}
             </div>
             <p className="text-base pt-2 text-muted-foreground">
-              Owings: {filterUnpaidStudents?.length} students
+              Owings: {summary?.unpaidStudentsCount || 0} students
             </p>
           </CardContent>
         </Card>
