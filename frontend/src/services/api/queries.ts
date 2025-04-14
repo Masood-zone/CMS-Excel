@@ -45,6 +45,7 @@ import {
   fetchTeacherOwingStudents,
   fetchTeacherClassStudents,
   fetchStudentOwingDetails,
+  fetchAllOwingStudents,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -463,6 +464,19 @@ export const useUpdateTeacher = () => {
   });
 };
 
+/*
+ * Query: Fetch all owing students
+ */
+export const useFetchAllOwingStudents = () => {
+  return useQuery({
+    queryKey: ["owingStudents"],
+    queryFn: () => fetchAllOwingStudents(),
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch owing students.");
+    },
+  });
+};
 /*
  * Query: Fetch a teacher record detail
  */

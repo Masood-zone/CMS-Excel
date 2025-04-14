@@ -221,20 +221,33 @@ export const studentService = {
 
   // New method to get owing students by class ID
   getOwingStudentsByClassId: async (classId: number) => {
-    return prisma.student.findMany({
+    // Find all students in the specified class with owing > 0
+    const owingStudents = await prisma.student.findMany({
       where: {
         classId,
         owing: {
-          gt: 0, // Only students with owing > 0
+          gt: 0,
         },
-      },
-      orderBy: {
-        owing: "desc", // Order by owing amount (highest first)
       },
       include: {
         class: true,
       },
+      orderBy: {
+        owing: "desc",
+      },
     });
+
+    // Calculate total owing amount for this class
+    const totalOwing = owingStudents.reduce(
+      (sum, student) => sum + student.owing,
+      0
+    );
+
+    return {
+      owingStudents,
+      totalOwing,
+      count: owingStudents.length,
+    };
   },
 
   // New method to get all owing students

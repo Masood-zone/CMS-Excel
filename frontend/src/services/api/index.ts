@@ -243,6 +243,18 @@ export const fetchStudents = async () => {
 };
 
 /**
+ * Fetch all owing students
+ */
+export const fetchAllOwingStudents = async () => {
+  try {
+    const response = await apiClient.get("/admins/owing-students");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching owing students:", error);
+    throw error;
+  }
+};
+/**
  * Fetch all students in a class.
  */
 export const fetchStudentsInClass = async (id: number) => {
