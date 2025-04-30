@@ -111,7 +111,7 @@ const rootRoutes = createBrowserRouter(
         }
       >
         <Route
-          index
+          path="dashboard"
           lazy={async () => {
             const { default: AdminHome } = await import("@/pages/admin/home");
             return { Component: AdminHome };

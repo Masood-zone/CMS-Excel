@@ -12,8 +12,7 @@ export const useLogin = () => {
       login({ user, token: user?.token, assigned_class: user?.assigned_class });
       toast("Logged in successfully!");
     },
-    onError: (error) => {
-      console.log(error);
+    onError: () => {
       toast("Opps! Error", {
         description: "There was error loggin in!",
       });
