@@ -32,7 +32,7 @@ export default function Login() {
     if (isSuccess && user) {
       const { role } = user.user;
       if (role === "SUPER_ADMIN") {
-        navigate("/admin/dashboard");
+        navigate("/admin/administrators");
       } else if (role === "TEACHER" || role === "Teacher") {
         navigate("/teacher");
       } else {

@@ -10,7 +10,7 @@ export const super_nav = {
       items: [
         {
           title: "Home",
-          url: "/admin",
+          url: "/admin/dashboard",
         },
         {
           title: "Administrators",
