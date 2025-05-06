@@ -13,6 +13,7 @@ router.get("/teachers", recordController.getAllTeacherSubmittedRecords);
 router.get("/:classId", recordController.getStudentRecordsByClassAndDate);
 router.put("/:id", recordController.update);
 router.delete("/:id", recordController.delete);
+router.post("/bulk-update-status", recordController.bulkUpdateStudentStatus);
 router.post("/submit", recordController.submitTeacherRecord);
 router.get("/teacher/:teacherId", recordController.getTeacherSubmittedRecords);
 router.put("/:id/status", recordController.updateStudentStatus);

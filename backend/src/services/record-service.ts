@@ -560,6 +560,111 @@ export const recordService = {
     return updatedRecord;
   },
 
+  bulkUpdateStudentStatus: async (
+    recordsData: Array<{
+      id: number;
+      hasPaid: boolean;
+      isAbsent: boolean;
+      submitedBy?: number;
+      date?: string;
+    }>
+  ) => {
+    const updatedRecords: Array<
+      Prisma.RecordGetPayload<{
+        include: { student: true; class: true; teacher: true };
+      }>
+    > = [];
+    const studentsToUpdate: Array<{
+      studentId: number;
+      recordId: number;
+      currentOwing: number;
+      settingsAmount: number;
+    }> = [];
+
+    // Process each record in a transaction
+    await prisma.$transaction(async (tx) => {
+      for (const recordData of recordsData) {
+        const { id, hasPaid, isAbsent, submitedBy, date } = recordData;
+
+        // Get the current record
+        const currentRecord = await tx.record.findUnique({
+          where: { id },
+          include: { teacher: true, student: true, class: true },
+        });
+
+        if (!currentRecord) {
+          console.warn(`Record with id ${id} not found, skipping`);
+          continue;
+        }
+
+        // Get the student
+        const student = await tx.student.findUnique({
+          where: { id: currentRecord.payedBy || 0 },
+        });
+
+        if (!student) {
+          console.warn(`Student for record ${id} not found, skipping`);
+          continue;
+        }
+
+        const currentOwing = student.owing;
+
+        // Get settings amount
+        const settings = await tx.settings.findFirst({
+          where: { name: "amount" },
+        });
+        const settingsAmount = settings
+          ? Number.parseInt(settings.value)
+          : currentRecord.settingsAmount || 0;
+
+        // Calculate amount paid
+        let amountPaid = 0;
+        if (hasPaid) {
+          // Full payment for today
+          amountPaid = settingsAmount;
+        }
+
+        // Update the record
+        const updatedRecord = await tx.record.update({
+          where: { id },
+          data: {
+            hasPaid,
+            isAbsent,
+            amount: amountPaid,
+            submitedBy: submitedBy || currentRecord.submitedBy,
+            submitedAt: date ? new Date(date) : currentRecord.submitedAt,
+            owingBefore: currentOwing,
+            owingAfter: currentOwing, // Initially the same as owingBefore
+          },
+        });
+
+        updatedRecords.push({
+          ...updatedRecord,
+          teacher: currentRecord.teacher || null,
+          student: currentRecord.student || null,
+          class: currentRecord.class || null,
+        });
+
+        // If changing to unpaid and not absent, schedule an owing update
+        if (!hasPaid && !isAbsent) {
+          studentsToUpdate.push({
+            studentId: student.id,
+            recordId: id,
+            currentOwing,
+            settingsAmount,
+          });
+        }
+      }
+    });
+
+    // Schedule owing updates if needed
+    if (studentsToUpdate.length > 0) {
+      scheduleOwingUpdate(studentsToUpdate, 1 * 60 * 1000); // 1 minute in milliseconds
+    }
+
+    return updatedRecords;
+  },
+
   updateRecord: async (
     id: number,
     recordData: {

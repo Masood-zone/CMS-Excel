@@ -112,6 +112,23 @@ export const recordController = {
 
     res.status(200).json(updatedRecord);
   }),
+  bulkUpdateStudentStatus: catchAsync(async (req: Request, res: Response) => {
+    const { records } = req.body;
+
+    if (!Array.isArray(records) || records.length === 0) {
+      throw new ApiError(
+        400,
+        "Invalid request: records must be a non-empty array"
+      );
+    }
+
+    const updatedRecords = await recordService.bulkUpdateStudentStatus(records);
+
+    res.status(200).json({
+      message: `Successfully updated ${updatedRecords.length} records`,
+      records: updatedRecords,
+    });
+  }),
 
   update: catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;

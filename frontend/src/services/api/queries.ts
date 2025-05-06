@@ -429,6 +429,33 @@ export const useUpdateAdmin = () => {
 };
 
 /**
+ * @Mutation Hook to bulk update student statuses
+ */
+export const useBulkUpdateStudentStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (records: CanteenRecord[]) => {
+      try {
+        const response = await apiClient.post("/records/bulk-update-status", {
+          records,
+        });
+        return response.data;
+      } catch (error) {
+        console.error("Error updating student statuses:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["studentRecords"] });
+      queryClient.invalidateQueries({ queryKey: ["teacherRecords"] });
+      queryClient.invalidateQueries({ queryKey: ["owingStudents"] });
+    },
+  });
+};
+
+/**
  * Mutation: Create a teacher.
  */
 export const useCreateTeacher = () => {

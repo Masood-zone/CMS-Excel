@@ -132,17 +132,23 @@ interface ProtectedRouteProps {
 
 type CanteenRecord = {
   id: number;
-  amount: number;
-  submitedAt: string;
-  submitedBy: number;
-  payedBy: number | null;
-  isPrepaid: boolean;
-  hasPaid: boolean;
-  classId: number;
+  amount?: number;
+  submitedAt: string | Date;
+  submitedBy?: number | Date;
+  payedBy?: number | null;
+  isPrepaid?: boolean;
+  hasPaid?: boolean;
+  classId?: number;
+  class?: {
+    id: number;
+    name: string;
+    description: string;
+    supervisorId: number;
+  };
   settingsAmount: number;
   isAbsent: boolean;
-  student: {
-    id: number;
+  student?: {
+    id?: number;
     name: string;
   } | null;
 };
