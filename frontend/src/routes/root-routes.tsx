@@ -10,6 +10,9 @@ import {
 import TeacherLayout from "@/components/layout/teacher-layout";
 import ProtectedRoute from "./protected-routes.tsx";
 import AdminHome from "@/pages/admin/home/index.tsx";
+import ViewTeacher from "@/pages/admin/teachers/view/view-teacher.tsx";
+import ViewStudent from "@/pages/admin/students/view/view-student.tsx";
+import OwingStudentDetails from "@/pages/teacher/students/owings/[id]/owing-student.tsx";
 
 const rootRoutes = createBrowserRouter(
   createRoutesFromElements(
@@ -238,15 +241,7 @@ const rootRoutes = createBrowserRouter(
               return { Component: AddTeacher };
             }}
           />
-          <Route
-            path=":id"
-            lazy={async () => {
-              const { default: ViewTeacher } = await import(
-                "@/pages/admin/teachers/view/view-teacher.tsx"
-              );
-              return { Component: ViewTeacher };
-            }}
-          />
+          <Route path=":id" element={<ViewTeacher />} />
           <Route
             path=":id/edit"
             lazy={async () => {
@@ -285,15 +280,7 @@ const rootRoutes = createBrowserRouter(
               return { Component: AddStudent };
             }}
           />
-          <Route
-            path=":id"
-            lazy={async () => {
-              const { default: ViewStudent } = await import(
-                "@/pages/admin/students/view/view-student.tsx"
-              );
-              return { Component: ViewStudent };
-            }}
-          />
+          <Route path=":id" element={<ViewStudent />} />
           <Route
             path=":id/edit"
             lazy={async () => {
@@ -664,24 +651,8 @@ const rootRoutes = createBrowserRouter(
               return { Component: OwingStudents };
             }}
           />
-          <Route
-            path="owing-students/:id"
-            lazy={async () => {
-              const { default: OwingStudentDetails } = await import(
-                "@/pages/teacher/students/owings/[id]/owing-student.tsx"
-              );
-              return { Component: OwingStudentDetails };
-            }}
-          />
-          <Route
-            path=":id"
-            lazy={async () => {
-              const { default: ViewStudent } = await import(
-                "@/pages/teacher/students/view/view-student.tsx"
-              );
-              return { Component: ViewStudent };
-            }}
-          />
+          <Route path="owing-students/:id" element={<OwingStudentDetails />} />
+          <Route path=":id" element={<ViewStudent />} />
           <Route
             path=":id/edit"
             lazy={async () => {
