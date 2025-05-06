@@ -44,8 +44,8 @@ export default function EditTeacherForm({
         ...data,
         id: teacherData.id,
         assigned_class: {
-          id: data.assigned_class?.id ?? 0,
-          name: data.assigned_class?.name ?? "",
+          id: teacherData?.assigned_class?.id ?? 0,
+          name: teacherData?.assigned_class?.name ?? "",
         },
       });
     } catch (error) {

@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import TeacherLayout from "@/components/layout/teacher-layout";
 import ProtectedRoute from "./protected-routes.tsx";
+import AdminHome from "@/pages/admin/home/index.tsx";
 
 const rootRoutes = createBrowserRouter(
   createRoutesFromElements(
@@ -112,10 +113,15 @@ const rootRoutes = createBrowserRouter(
       >
         <Route
           path="dashboard"
-          lazy={async () => {
-            const { default: AdminHome } = await import("@/pages/admin/home");
-            return { Component: AdminHome };
-          }}
+          element={
+            <ErrorBoundary
+              fallback={({ error, reset }) => (
+                <Error error={error} reset={reset} />
+              )}
+            >
+              <AdminHome />
+            </ErrorBoundary>
+          }
         />
         {/* Settings */}
         <Route
