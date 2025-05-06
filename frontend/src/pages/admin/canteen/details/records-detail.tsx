@@ -81,11 +81,17 @@ export default function TeacherRecordsDetail() {
   // Calculate statistics
   const totalPaid = transformedRecords
     .filter((record: CanteenRecord) => record.hasPaid)
-    .reduce((sum: number, record: CanteenRecord) => sum + record.amount, 0);
+    .reduce(
+      (sum: number, record: CanteenRecord) => sum + (record?.amount ?? 0),
+      0
+    );
 
   const totalUnpaid = transformedRecords
     .filter((record: CanteenRecord) => !record.hasPaid && !record.isAbsent)
-    .reduce((sum: number, record: CanteenRecord) => sum + record.amount, 0);
+    .reduce(
+      (sum: number, record: CanteenRecord) => sum + (record?.amount ?? 0),
+      0
+    );
 
   const totalOutstanding = totalPaid + totalUnpaid;
 

@@ -134,7 +134,7 @@ type CanteenRecord = {
   id: number;
   amount?: number;
   submitedAt: string | Date;
-  submitedBy?: number | Date;
+  submitedBy?: number | Date | null;
   payedBy?: number | null;
   isPrepaid?: boolean;
   hasPaid?: boolean;
