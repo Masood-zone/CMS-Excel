@@ -15,6 +15,7 @@ router.get("/:id/records", teacherController.getTeacherRecords);
 router.post("/", teacherController.createTeacher);
 router.patch("/:id", teacherController.updateTeacher);
 router.delete("/:id", teacherController.deleteTeacher);
+router.post("/:id/reset-password", teacherController.resetPassword);
 router.get("/:id/class", teacherController.getClassBySupervisorId);
 
 export const teacherRoutes = router;

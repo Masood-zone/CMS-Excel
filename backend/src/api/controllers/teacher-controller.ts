@@ -114,4 +114,15 @@ export const teacherController = {
     const result = await teacherService.getClassBySupervisorId(id);
     res.json(result);
   }),
+  resetPassword: catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    const result = await teacherService.resetTeacherPassword(
+      Number(id),
+      password
+    );
+
+    res.status(200).json(result);
+  }),
 };

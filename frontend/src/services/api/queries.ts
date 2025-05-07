@@ -502,6 +502,17 @@ export const useUpdateTeacher = () => {
   });
 };
 
+export const useResetTeacherPassword = () => {
+  return useMutation({
+    mutationFn: async ({ id, password }: { id: number; password: string }) => {
+      const response = await apiClient.post(`/teachers/${id}/reset-password`, {
+        password,
+      });
+      return response.data;
+    },
+  });
+};
+
 /*
  * Query: Fetch all owing students
  */

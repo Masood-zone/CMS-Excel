@@ -1,11 +1,24 @@
+"use client";
+
 import { DataTable } from "@/components/ui/data-table";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
 import ActionMenu from "@/components/actions/action-menu";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDeleteResource } from "@/services/api/queries";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
+
+export interface Teacher {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  gender: string;
+  assigned_class: {
+    name: string;
+  } | null;
+}
 
 export default function TeachersTable({
   data,
@@ -128,6 +141,7 @@ export default function TeachersTable({
             id={teacher?.id ?? 0}
             resourceName="Teacher"
             onDelete={(id) => deleteTeacher(id)}
+            teacherName={teacher.name} // Pass the teacher name
           />
         );
       },

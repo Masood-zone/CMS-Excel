@@ -17,7 +17,7 @@ export const userRepository = {
     });
   },
 
-  findById: async (id: number) => {
+  findById: async (id: number, includePassword = false) => {
     return prisma.user.findUnique({
       where: { id },
       select: {
@@ -27,6 +27,7 @@ export const userRepository = {
         phone: true,
         role: true,
         gender: true,
+        password: includePassword,
         assigned_class: true,
       },
     });

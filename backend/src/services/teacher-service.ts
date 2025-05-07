@@ -2,18 +2,7 @@ import { userRepository } from "../db/repositories/user-repository";
 import { recordRepository } from "../db/repositories/record-repository";
 import { ApiError } from "../utils/api-error";
 import { prisma } from "../db/client";
-
-// interface TeacherData {
-//   email: string;
-//   name: string;
-//   phone: string;
-//   gender: string;
-//   password?: string;
-// }
-
-// interface UpdateTeacherData extends Partial<TeacherData> {
-//   assigned_class?: { id: number };
-// }
+import bcrypt from "bcryptjs";
 
 export const teacherService = {
   getAllTeachers: async () => {
@@ -243,5 +232,33 @@ export const teacherService = {
     });
 
     return { supervisor };
+  },
+  resetTeacherPassword: async (id: number, newPassword: string) => {
+    if (!newPassword) {
+      throw new ApiError(400, "New password is required");
+    }
+
+    // Check if teacher exists
+    const teacher = await userRepository.findById(id, true);
+    if (!teacher || !["TEACHER", "Teacher"].includes(teacher.role)) {
+      throw new ApiError(404, "Teacher not found");
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password
+    const updatedTeacher = await userRepository.update(id, {
+      password: hashedPassword,
+    });
+
+    if (!updatedTeacher) {
+      throw new ApiError(500, "Failed to reset password");
+    }
+
+    return {
+      status: "Password reset successfully",
+      teacherId: id,
+    };
   },
 };
