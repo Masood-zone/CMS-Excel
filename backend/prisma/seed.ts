@@ -3,6 +3,22 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
+  //   Seed Classes
+  const classes = await Promise.all([
+    prisma.class.create({
+      data: {
+        name: "JHS 1",
+        id: 1,
+      },
+    }),
+    prisma.class.create({
+      data: {
+        name: "JHS 2",
+        id: 2,
+      },
+    }),
+  ]);
+
   // Seed Users
   const users = await Promise.all([
     prisma.user.create({
@@ -33,22 +49,6 @@ async function main() {
   ]);
 
   console.log("Seeded users:", users);
-
-  //   Seed Classes
-  const classes = await Promise.all([
-    prisma.class.create({
-      data: {
-        name: "JHS 1",
-        id: 1,
-      },
-    }),
-    prisma.class.create({
-      data: {
-        name: "JHS 2",
-        id: 2,
-      },
-    }),
-  ]);
 
   console.log("Seeded classes:", classes);
 }

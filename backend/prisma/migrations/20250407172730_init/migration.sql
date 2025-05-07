@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Record" ADD COLUMN     "owingAfter" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "owingBefore" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "Student" ADD COLUMN     "owing" INTEGER NOT NULL DEFAULT 0;

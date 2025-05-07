@@ -12,6 +12,15 @@ export const fetchRecords = async () => {
     throw error;
   }
 };
+export const fetchDashboardSummary = async () => {
+  try {
+    const response = await apiClient.get("/records/dashboard-summary");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching records:", error);
+    throw error;
+  }
+};
 /**
  * Fetch canteen amount.
  */
@@ -30,7 +39,7 @@ export const fetchRecordsAmount = async () => {
  */
 export const updateUser = async (data: FormUser) => {
   try {
-    const response = await apiClient.put(`/users/${data.id}`, data);
+    const response = await apiClient.patch(`/users/${data.id}`, data);
     return response.data;
   } catch (error) {
     console.error("Error updating user:", error);
@@ -42,7 +51,19 @@ export const updateUser = async (data: FormUser) => {
  */
 export const updateTeacher = async (data: Teacher) => {
   try {
-    const response = await apiClient.put(`/teachers/${data.id}`, data);
+    const response = await apiClient.patch(`/teachers/${data.id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+};
+/**
+ * Update Teacher
+ */
+export const updateAdmin = async (data: Admin) => {
+  try {
+    const response = await apiClient.patch(`/admins/${data.id}`, data);
     return response.data;
   } catch (error) {
     console.error("Error updating user:", error);
@@ -50,6 +71,42 @@ export const updateTeacher = async (data: Teacher) => {
   }
 };
 
+/**
+ * Fetch all admins.
+ */
+export const fetchAdmins = async () => {
+  try {
+    const response = await apiClient.get("/admins");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching teachers:", error);
+    throw error;
+  }
+};
+/**
+ * Fetch admin
+ */
+export const fetchAdmin = async (id: number) => {
+  try {
+    const response = await apiClient.get(`/admins/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching teacher:", error);
+    throw error;
+  }
+};
+/**
+ * Create Admin
+ */
+export const createAdmin = async (data: Admin) => {
+  try {
+    const response = await apiClient.post("/auth/signup", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating teacher:", error);
+    throw error;
+  }
+};
 /**
  * Fetch all teachers.
  */
@@ -79,7 +136,7 @@ export const fetchTeacher = async (id: number) => {
  */
 export const createTeacher = async (data: Teacher) => {
   try {
-    const response = await apiClient.post("/signup", data);
+    const response = await apiClient.post("/auth/signup", data);
     return response.data;
   } catch (error) {
     console.error("Error creating teacher:", error);
@@ -194,6 +251,18 @@ export const fetchStudents = async () => {
   }
 };
 
+/**
+ * Fetch all owing students
+ */
+export const fetchAllOwingStudents = async () => {
+  try {
+    const response = await apiClient.get("/admins/owing-students");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching owing students:", error);
+    throw error;
+  }
+};
 /**
  * Fetch all students in a class.
  */
@@ -367,6 +436,72 @@ export const getStudentRecordsByClassAndDate = async (
     throw error;
   }
 };
+
+/**
+ * Fetch owing students in teacher's class
+ */
+export const fetchTeacherOwingStudents = async (teacherId: number) => {
+  try {
+    const response = await apiClient.get(
+      `/teachers/${teacherId}/owing-students`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching owing students:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch students in teacher's class
+ */
+export const fetchTeacherClassStudents = async (teacherId: number) => {
+  try {
+    const response = await apiClient.get(
+      `/teachers/${teacherId}/owing-students`
+    );
+    return response.data.owingStudents;
+    // if (classData && classData.id) {
+    //   const studentsResponse = await apiClient.get(
+    //     `/students/class/${classData.id}`
+    //   );
+    //   return studentsResponse.data;
+    // }
+    // return [];
+  } catch (error) {
+    console.error("Error fetching students in teacher's class:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch student owing details
+ */
+export const fetchStudentOwingDetails = async (studentId: number) => {
+  try {
+    const response = await apiClient.get(`/students/${studentId}/owing`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching student owing details:", error);
+    throw error;
+  }
+};
+
+/**
+ * Pay student owing
+ */
+export const payStudentOwing = async (studentId: number, amount: number) => {
+  try {
+    const response = await apiClient.post(`/students/${studentId}/pay`, {
+      amount,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error paying student owing:", error);
+    throw error;
+  }
+};
+
 //Mutation: Generate records for students based on classID and date
 export const generateRecordForADate = async (classId: number, date: string) => {
   try {
@@ -441,7 +576,7 @@ export const createRecordsAmount = async (data: RecordsAmount) => {
  *  Update settings amount */
 export const updateRecordsAmount = async (data: RecordsAmount) => {
   try {
-    const response = await apiClient.put("/settings/amount", data);
+    const response = await apiClient.patch("/settings/amount", data);
     return response.data;
   } catch (error) {
     console.log("Error updating preset amount");

@@ -2,19 +2,18 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { useLogin } from "@/hooks/use-auth";
-import { toast } from "sonner";
+// import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 
 export default function Login() {
@@ -33,7 +32,7 @@ export default function Login() {
     if (isSuccess && user) {
       const { role } = user.user;
       if (role === "SUPER_ADMIN") {
-        navigate("/admin");
+        navigate("/admin/administrators");
       } else if (role === "TEACHER" || role === "Teacher") {
         navigate("/teacher");
       } else {
@@ -47,7 +46,6 @@ export default function Login() {
       login(data);
     } catch (error) {
       console.error(error);
-      toast("There was an error!");
     } finally {
       reset();
     }
@@ -93,9 +91,9 @@ export default function Login() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Button variant="link" className="text-sm text-primary">
+                  {/* <Button variant="link" className="text-sm text-primary">
                     <Link to="/forgot-password">Forgot your password?</Link>
-                  </Button>
+                  </Button> */}
                 </div>
                 <div className="relative">
                   <Input
@@ -144,7 +142,7 @@ export default function Login() {
                 Log in
               </Button>
             </CardContent>
-            <CardFooter>
+            {/* <CardFooter>
               <div className="space-x-4 text-center text-gray-500">
                 <Link to="/contact-us" className="text-sm hover:text-primary">
                   <span>&copy;CMS</span> Contact
@@ -156,7 +154,7 @@ export default function Login() {
                   Terms & Conditions
                 </Link>
               </div>
-            </CardFooter>
+            </CardFooter> */}
           </form>
         </Card>
       </main>

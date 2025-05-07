@@ -40,15 +40,53 @@ type Student = {
   gender: "male" | "female";
   hasPaid?: boolean;
   amount?: number;
+  owing?: number;
   settingsAmount?: number;
   paidBy?: number;
-  class?: string;
+  class?: Class;
 };
+
+interface OwingStudentsResponse {
+  class: {
+    id: number;
+    name: string;
+    description: string;
+    supervisorId: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  owingStudents: OwingStudent[];
+  totalOwing: number;
+  count: number;
+}
+
+interface PaymentResponse {
+  student: OwingStudent;
+  paymentAmount: number;
+  previousOwing: number;
+  newOwing: number;
+  excessPayment: number;
+  fullyPaid: boolean;
+}
 
 type RecordsAmount = {
   id?: number;
   name?: string;
   value?: string;
+};
+
+type Admin = {
+  id?: number;
+  name: string;
+  phone: string;
+  assigned_class?: {
+    id: number;
+    name: string;
+  };
+  role: string;
+  email: string;
+  gender: "male" | "female";
+  password?: string;
 };
 
 type Teacher = {
@@ -94,17 +132,23 @@ interface ProtectedRouteProps {
 
 type CanteenRecord = {
   id: number;
-  amount: number;
-  submitedAt: string;
-  submitedBy: number;
-  payedBy: number | null;
-  isPrepaid: boolean;
-  hasPaid: boolean;
-  classId: number;
+  amount?: number;
+  submitedAt: string | Date;
+  submitedBy?: number | Date | null;
+  payedBy?: number | null;
+  isPrepaid?: boolean;
+  hasPaid?: boolean;
+  classId?: number;
+  class?: {
+    id: number;
+    name: string;
+    description: string;
+    supervisorId: number;
+  };
   settingsAmount: number;
   isAbsent: boolean;
-  student: {
-    id: number;
+  student?: {
+    id?: number;
     name: string;
   } | null;
 };

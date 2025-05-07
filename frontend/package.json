@@ -1,5 +1,6 @@
 {
-  "name": "canteen-management-app",
+  "name": "canteen-management-system",
+  "homepage": "https://rasking.top",
   "private": true,
   "version": "0.0.0",
   "type": "module",

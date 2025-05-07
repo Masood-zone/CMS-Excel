@@ -1,6 +1,21 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { ColumnDef } from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+
+// Define the CanteenRecord type
+interface CanteenRecord {
+  id: number;
+  student: {
+    name: string;
+  };
+  settingsAmount: number;
+  submitedAt: Date;
+  hasPaid: boolean;
+  isAbsent: boolean;
+}
 
 export const columns = (
   handleUpdateStatus: (
@@ -10,8 +25,37 @@ export const columns = (
       isAbsent: boolean;
     }
   ) => void,
-  updatingLoader: boolean
+  updatingLoader: boolean,
+  onRowSelectionChange?: (rowId: number, isSelected: boolean) => void
 ): ColumnDef<CanteenRecord>[] => [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => {
+          row.toggleSelected(!!value);
+          if (onRowSelectionChange) {
+            onRowSelectionChange(row.original.id, !!value);
+          }
+        }}
+        aria-label="Select row"
+        disabled={row.original.isAbsent}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "student.name",
     header: "Student Name",
@@ -46,6 +90,7 @@ export const columns = (
               })
             }
             disabled={updatingLoader}
+            size="sm"
           >
             {record.hasPaid ? "Mark as Unpaid" : "Mark as Paid"}
           </Button>
@@ -56,6 +101,7 @@ export const columns = (
                 handleUpdateStatus(record, { hasPaid: false, isAbsent: true })
               }
               disabled={updatingLoader}
+              size="sm"
             >
               Mark as Absent
             </Button>
@@ -70,6 +116,7 @@ export const columns = (
                 })
               }
               disabled={updatingLoader}
+              size="sm"
             >
               Mark as Present
             </Button>

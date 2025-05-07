@@ -1,3 +1,5 @@
+"use client";
+
 import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import {
@@ -14,6 +16,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
 
@@ -31,6 +34,15 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  // Function to close sidebar on mobile when a link is clicked
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -55,7 +67,8 @@ export function NavMain({
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link to={subItem.url}>
+                        {/* Use Link directly with onClick handler */}
+                        <Link to={subItem.url} onClick={handleLinkClick}>
                           <span>{subItem.title}</span>
                         </Link>
                       </SidebarMenuSubButton>

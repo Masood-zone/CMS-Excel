@@ -13,12 +13,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 
 export default function VerifyOTP() {
-  const { register, handleSubmit } = useForm<VerifyOTPFormProps>();
+  const { handleSubmit } = useForm<VerifyOTPFormProps>();
 
   const onSubmit = (data: VerifyOTPFormProps) => {
     console.log(data);

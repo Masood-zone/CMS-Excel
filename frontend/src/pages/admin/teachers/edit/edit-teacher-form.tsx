@@ -11,8 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useUpdateTeacher } from "@/services/api/queries";
-import { Eye, EyeClosed } from "lucide-react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 
@@ -23,9 +21,6 @@ export default function EditTeacherForm({
   teacherData: Teacher;
   classList: Class[];
 }) {
-  console.log(teacherData, "teacherData");
-
-  const [showPassword, setShowPassword] = useState(false);
   const { mutate: updateTeacher, isLoading } = useUpdateTeacher();
   const {
     register,
@@ -46,8 +41,8 @@ export default function EditTeacherForm({
         ...data,
         id: teacherData.id,
         assigned_class: {
-          id: data.assigned_class?.id ?? 0,
-          name: data.assigned_class?.name ?? "",
+          id: teacherData?.assigned_class?.id ?? 0,
+          name: teacherData?.assigned_class?.name ?? "",
         },
       });
     } catch (error) {
@@ -56,7 +51,7 @@ export default function EditTeacherForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
       <CardContent className="space-y-4">
         {/* First Name */}
         <div className="space-y-2">
@@ -159,28 +154,6 @@ export default function EditTeacherForm({
               ))}
             </SelectContent>
           </Select>
-        </div>
-        {/* Password */}
-        <div className="space-y-2 relative">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Credentials</Label>
-          </div>
-          <Input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            id="password"
-            autoComplete="off"
-            placeholder="Password"
-            defaultValue={teacherData?.password}
-            className="bg-transparent"
-          />
-          <span className="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 pt-3">
-            {showPassword ? (
-              <Eye onClick={() => setShowPassword(!showPassword)} />
-            ) : (
-              <EyeClosed onClick={() => setShowPassword(!showPassword)} />
-            )}
-          </span>
         </div>
         {/* Submit button */}
         <Button type="submit" className="w-full" disabled={isLoading}>

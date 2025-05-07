@@ -10,7 +10,11 @@ export const super_nav = {
       items: [
         {
           title: "Home",
-          url: "/admin",
+          url: "/admin/dashboard",
+        },
+        {
+          title: "Administrators",
+          url: "/admin/administrators",
         },
         {
           title: "Teachers",
@@ -22,6 +26,7 @@ export const super_nav = {
       title: "Administartion",
       url: "#",
       icon: Bot,
+      isActive: true,
       items: [
         {
           title: "Students",
@@ -37,6 +42,7 @@ export const super_nav = {
       title: "Accounting",
       url: "#",
       icon: BookOpen,
+      isActive: true,
       items: [
         {
           title: "Setup Canteen",
@@ -45,6 +51,10 @@ export const super_nav = {
         {
           title: "Canteen Records",
           url: "/admin/canteen-records",
+        },
+        {
+          title: "Owing Records",
+          url: "/admin/owings",
         },
         {
           title: "Expenses",
@@ -56,6 +66,7 @@ export const super_nav = {
       title: "Settings",
       url: "/settings",
       icon: Settings2,
+      isActive: true,
       items: [
         {
           title: "General",
@@ -79,8 +90,16 @@ export const teacher_nav = {
           url: "/teacher",
         },
         {
+          title: "View Canteen Records",
+          url: "/teacher/canteen/submitted-records",
+        },
+        {
           title: "Canteen",
           url: "/teacher/canteen",
+        },
+        {
+          title: "Owings",
+          url: "/teacher/students/owing-students",
         },
         {
           title: "Students",
@@ -108,6 +127,7 @@ export const teacher_nav = {
       title: "Settings",
       url: "/teacher/settings",
       icon: Settings2,
+      isActive: true,
       items: [
         {
           title: "General",

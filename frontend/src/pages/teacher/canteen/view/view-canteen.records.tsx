@@ -89,21 +89,18 @@ export default function ViewCanteenRecord() {
             <CanteenTable
               columns={viewColumns}
               data={submittedRecords[0]?.unpaidStudents || []}
-              searchField="student.name"
             />
           </TabsContent>
           <TabsContent value="paid">
             <CanteenTable
               columns={viewColumns}
               data={submittedRecords[0]?.paidStudents || []}
-              searchField="student.name"
             />
           </TabsContent>
           <TabsContent value="absent">
             <CanteenTable
               columns={viewColumns}
               data={submittedRecords[0]?.absentStudents || []}
-              searchField="student.name"
             />
           </TabsContent>
         </Tabs>

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -5,6 +7,8 @@ import {
   useStudentRecordsByClassAndDate,
   useUpdateStudentStatus,
   useSubmitTeacherRecord,
+  useGenerateStudentRecords,
+  useBulkUpdateStudentStatus,
 } from "@/services/api/queries";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,28 +24,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle, XCircle, CheckSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CanteenTable } from "@/components/tables/canteen-table";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
 import { columns } from "./columns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import type { ColumnDef } from "@tanstack/react-table";
+
+// Define the Class type
+interface Class {
+  id: number;
+  name: string;
+  supervisorId: number;
+}
 
 export default function SetupCanteen() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClassId, setSelectedClassId] = useState<string>("");
-
   const [records, setRecords] = useState<CanteenRecord[]>([]);
+  const [selectedRows, setSelectedRows] = useState<CanteenRecord[]>([]);
+  const [showBulkActionDialog, setShowBulkActionDialog] = useState(false);
+  const [bulkAction, setBulkAction] = useState<"paid" | "unpaid" | null>(null);
+  const [showMarkAllDialog, setShowMarkAllDialog] = useState(false);
+  const [markAllAction, setMarkAllAction] = useState<"paid" | "unpaid" | null>(
+    null
+  );
+
   const formattedDate = selectedDate.toISOString().split("T")[0];
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
   const { data: studentRecords, isLoading: recordsLoading } =
-    useStudentRecordsByClassAndDate(parseInt(selectedClassId), formattedDate);
+    useStudentRecordsByClassAndDate(
+      Number.parseInt(selectedClassId),
+      formattedDate
+    );
+  const { mutate: generateRecords, isLoading: isGenerating } =
+    useGenerateStudentRecords();
   const { mutate: updateStatus, isLoading: updatingLoader } =
     useUpdateStudentStatus();
+  const { mutate: bulkUpdateStatus, isLoading: bulkUpdatingLoader } =
+    useBulkUpdateStudentStatus();
   const { mutate: submitRecord, isLoading: submittingRecord } =
     useSubmitTeacherRecord();
   const classSupervisorId = classes?.find(
-    (classItem: Class) => classItem.id === parseInt(selectedClassId)
+    (classItem: Class) => classItem.id === Number.parseInt(selectedClassId)
   )?.supervisorId;
 
   useEffect(() => {
@@ -59,6 +95,9 @@ export default function SetupCanteen() {
         ...record,
         ...newStatus,
         submitedBy: classSupervisorId ?? 0,
+        classId: Number.parseInt(selectedClassId),
+        isPrepaid: record.isPrepaid ?? false,
+        payedBy: record.payedBy ?? null,
         date: selectedDate?.toISOString().split("T")[0] ?? "",
       };
       await updateStatus(updatedRecord);
@@ -72,6 +111,110 @@ export default function SetupCanteen() {
     }
   };
 
+  const handleBulkUpdateStatus = async () => {
+    if (!selectedRows.length || !bulkAction) return;
+
+    try {
+      const updatedRecords = selectedRows.map((record) => ({
+        ...record,
+        hasPaid: bulkAction === "paid",
+        isAbsent: false,
+        submitedBy: classSupervisorId ?? 0,
+        date: selectedDate?.toISOString().split("T")[0] ?? "",
+        amount: record.amount,
+        submitedAt: record.submitedAt,
+        payedBy: record.payedBy,
+        isPrepaid: record.isPrepaid,
+        settingsAmount: record.settingsAmount,
+        classId: record.classId, // Ensure classId is included
+        student: record.student, // Ensure student is included
+      }));
+
+      await bulkUpdateStatus(updatedRecords);
+
+      // Update local state
+      setRecords((prevRecords) =>
+        prevRecords.map((record) => {
+          const updatedRecord = selectedRows.find((r) => r.id === record.id);
+          if (updatedRecord) {
+            return {
+              ...record,
+              hasPaid: bulkAction === "paid",
+              isAbsent: false,
+            };
+          }
+          return record;
+        })
+      );
+
+      toast.success(
+        `${selectedRows.length} students marked as ${
+          bulkAction === "paid" ? "paid" : "unpaid"
+        }`
+      );
+      setSelectedRows([]);
+      setShowBulkActionDialog(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update student statuses");
+    }
+  };
+
+  const handleMarkAllStudents = async (action: "paid" | "unpaid") => {
+    try {
+      // Filter out absent students for bulk update
+      const studentsToUpdate = records.filter((record) => !record.isAbsent);
+
+      const updatedRecords = studentsToUpdate.map((record) => ({
+        id: record.id,
+        hasPaid: action === "paid",
+        isAbsent: false,
+        submitedBy: classSupervisorId ?? 0,
+        date: selectedDate?.toISOString().split("T")[0] ?? "",
+        amount: record.amount,
+        submitedAt: record.submitedAt,
+        payedBy: record.payedBy,
+        isPrepaid: record.isPrepaid,
+        settingsAmount: record.settingsAmount,
+      }));
+
+      await bulkUpdateStatus(updatedRecords);
+
+      // Update local state
+      setRecords((prevRecords) =>
+        prevRecords.map((record) => {
+          if (!record.isAbsent) {
+            return {
+              ...record,
+              hasPaid: action === "paid",
+            };
+          }
+          return record;
+        })
+      );
+
+      toast.success(
+        `All students marked as ${action === "paid" ? "paid" : "unpaid"}`
+      );
+      setShowMarkAllDialog(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update student statuses");
+    }
+  };
+
+  const openMarkAllDialog = (action: "paid" | "unpaid") => {
+    setMarkAllAction(action);
+    setShowMarkAllDialog(true);
+  };
+
+  const handleGenerateRecords = () => {
+    generateRecords({
+      classId: Number.parseInt(selectedClassId),
+      date: selectedDate.toISOString(),
+    });
+  };
+
   const handleSubmitCanteen = async () => {
     if (!selectedClassId) {
       toast.error("Please select a class before submitting");
@@ -79,7 +222,7 @@ export default function SetupCanteen() {
     }
 
     const payload = {
-      classId: parseInt(selectedClassId),
+      classId: Number.parseInt(selectedClassId),
       date: formattedDate,
       unpaidStudents: records
         .filter((r) => !r.hasPaid && !r.isAbsent)
@@ -119,14 +262,82 @@ export default function SetupCanteen() {
     }
   };
 
+  const handleRowSelectionChange = (rows: CanteenRecord[]) => {
+    setSelectedRows(rows);
+  };
+
+  const openBulkActionDialog = (action: "paid" | "unpaid") => {
+    setBulkAction(action);
+    setShowBulkActionDialog(true);
+  };
+  const typedColumns: ColumnDef<CanteenRecord, unknown>[] = columns(
+    handleUpdateStatus,
+    updatingLoader,
+    () => {} // This should be your function that handles row selection changes
+  ) as ColumnDef<CanteenRecord, unknown>[];
+
   return (
-    <section className="container mx-auto py-10 px-5">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Canteen Setup</h1>
-          <p className="text-muted-foreground">
-            Setup canteen records for students in a class
-          </p>
+    <section className="container mx-auto">
+      <div className="flex justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
+            {/* Mark All buttons */}
+            <Button
+              onClick={() => openMarkAllDialog("paid")}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <CheckSquare className="h-4 w-4 mr-2" />
+              Mark All as Paid
+            </Button>
+            <Button
+              onClick={() => openMarkAllDialog("unpaid")}
+              variant="destructive"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Mark All as Unpaid
+            </Button>
+
+            {selectedRows.length > 0 && (
+              <>
+                <Button
+                  onClick={() => openBulkActionDialog("paid")}
+                  disabled={bulkUpdatingLoader}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark {selectedRows.length} as Paid
+                </Button>
+                <Button
+                  onClick={() => openBulkActionDialog("unpaid")}
+                  disabled={bulkUpdatingLoader}
+                  variant="destructive"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Mark {selectedRows.length} as Unpaid
+                </Button>
+              </>
+            )}
+          </div>
+          {selectedRows.length > 0 && (
+            <>
+              <Button
+                onClick={() => openBulkActionDialog("paid")}
+                disabled={bulkUpdatingLoader}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark {selectedRows.length} as Paid
+              </Button>
+              <Button
+                onClick={() => openBulkActionDialog("unpaid")}
+                disabled={bulkUpdatingLoader}
+                variant="destructive"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Mark {selectedRows.length} as Unpaid
+              </Button>
+            </>
+          )}
         </div>
         <Button
           onClick={handleSubmitCanteen}
@@ -174,15 +385,89 @@ export default function SetupCanteen() {
             />
           </PopoverContent>
         </Popover>
+        <Button onClick={handleGenerateRecords} disabled={isGenerating}>
+          {isGenerating ? "Generating..." : "Generate Records"}
+        </Button>
       </div>
+
+      {selectedRows.length > 0 && (
+        <div className="bg-muted/50 p-3 rounded-md mb-4 flex items-center justify-between">
+          <p>
+            <span className="font-medium">{selectedRows.length}</span> students
+            selected
+          </p>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedRows([])}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       {classesLoading || recordsLoading ? (
         <TableSkeleton />
       ) : (
         <CanteenTable
-          columns={columns(handleUpdateStatus, updatingLoader)}
+          columns={typedColumns}
           data={records}
+          onRowSelectionChange={handleRowSelectionChange}
         />
       )}
+
+      <AlertDialog
+        open={showBulkActionDialog}
+        onOpenChange={setShowBulkActionDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark {selectedRows.length} students as{" "}
+              {bulkAction === "paid" ? "paid" : "unpaid"}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkUpdateStatus}
+              className={
+                bulkAction === "paid" ? "bg-green-600 hover:bg-green-700" : ""
+              }
+            >
+              {bulkUpdatingLoader
+                ? "Processing..."
+                : `Mark as ${bulkAction === "paid" ? "Paid" : "Unpaid"}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Mark All confirmation dialog */}
+      <AlertDialog open={showMarkAllDialog} onOpenChange={setShowMarkAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Mark All</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark ALL students as{" "}
+              {markAllAction === "paid" ? "paid" : "unpaid"}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                markAllAction && handleMarkAllStudents(markAllAction)
+              }
+              className={
+                markAllAction === "paid"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : ""
+              }
+            >
+              {bulkUpdatingLoader
+                ? "Processing..."
+                : `Mark All as ${markAllAction === "paid" ? "Paid" : "Unpaid"}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
