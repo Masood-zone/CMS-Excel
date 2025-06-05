@@ -16,7 +16,7 @@ export default function AdminsTable({
   isLoading: boolean;
   error: unknown;
 }) {
-  const { mutateAsync: deleteTeacher } = useDeleteResource(
+  const { mutateAsync: deleteAdmin } = useDeleteResource(
     "administrators",
     "administrators" // Query key
   );
@@ -109,8 +109,8 @@ export default function AdminsTable({
         return (
           <ActionMenu
             id={teacher?.id ?? 0}
-            resourceName="Teacher"
-            onDelete={(id) => deleteTeacher(id)}
+            resourceName="Administrator"
+            onDelete={(id) => deleteAdmin(id)}
           />
         );
       },

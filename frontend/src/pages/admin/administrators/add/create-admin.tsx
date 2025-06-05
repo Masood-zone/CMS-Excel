@@ -50,10 +50,10 @@ export default function AddAdmin() {
   };
 
   return (
-    <section className="w-full">
+    <section className="w-full px-2 sm:px-0">
       <Card className="w-full bg-transparent border-none shadow-none">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <PageHeading>Register Admin</PageHeading>
             <GoBackButton />
           </CardTitle>
@@ -120,7 +120,7 @@ export default function AddAdmin() {
                 Gender
               </Label>
               <Select
-                value={gender} // Bind `Select`'s value to `watch` output
+                value={gender}
                 onValueChange={(value) =>
                   setValue("gender", value as "male" | "female", {
                     shouldValidate: true,
@@ -138,7 +138,7 @@ export default function AddAdmin() {
             </div>
             {/* Password */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <Label htmlFor="password">Credentials</Label>
               </div>
               <Input
@@ -165,16 +165,20 @@ export default function AddAdmin() {
                 </p>
               )}
             </div>
-            <Button type="submit" className="w-full " disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full text-xs sm:text-base"
+              disabled={isLoading}
+            >
               <ButtonLoader
                 isPending={isLoading}
-                loadingText="Creating Teacher..."
-                fallback="Create Teacher"
+                loadingText="Creating Administrator..."
+                fallback="Create Administrator"
               />
             </Button>
           </CardContent>
           <CardFooter>
-            <div className="space-x-4 text-center text-gray-500">
+            <div className="space-x-0 sm:space-x-4 text-center text-gray-500 flex flex-col sm:flex-row items-center justify-center gap-2">
               <Link to="/contact-us" className="text-sm hover:text-primary">
                 Facing issues? Contact us
               </Link>
