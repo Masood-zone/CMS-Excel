@@ -6,11 +6,11 @@ import { Toaster } from "../ui/sonner";
 
 export default function TeacherLayout() {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="overflow-x-hidden w-full max-w-full">
       <TeacherSidebar />
-      <SidebarInset>
+      <SidebarInset className="overflow-x-hidden w-full max-w-full">
         <Navbar />
-        <main className="p-5">
+        <main className="p-5 overflow-x-auto">
           <Outlet />
         </main>
         <Toaster />

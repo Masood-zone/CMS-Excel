@@ -277,14 +277,14 @@ export default function SetupCanteen() {
   ) as ColumnDef<CanteenRecord, unknown>[];
 
   return (
-    <section className="container mx-auto">
-      <div className="flex justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <div className="flex items-center space-x-2">
+    <section className="container mx-auto px-2 sm:px-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:space-x-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:space-x-2">
             {/* Mark All buttons */}
             <Button
               onClick={() => openMarkAllDialog("paid")}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-xs sm:text-base"
             >
               <CheckSquare className="h-4 w-4 mr-2" />
               Mark All as Paid
@@ -292,17 +292,17 @@ export default function SetupCanteen() {
             <Button
               onClick={() => openMarkAllDialog("unpaid")}
               variant="destructive"
+              className="text-xs sm:text-base"
             >
               <XCircle className="h-4 w-4 mr-2" />
               Mark All as Unpaid
             </Button>
-
             {selectedRows.length > 0 && (
               <>
                 <Button
                   onClick={() => openBulkActionDialog("paid")}
                   disabled={bulkUpdatingLoader}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 text-xs sm:text-base"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark {selectedRows.length} as Paid
@@ -311,6 +311,7 @@ export default function SetupCanteen() {
                   onClick={() => openBulkActionDialog("unpaid")}
                   disabled={bulkUpdatingLoader}
                   variant="destructive"
+                  className="text-xs sm:text-base"
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Mark {selectedRows.length} as Unpaid
@@ -318,37 +319,18 @@ export default function SetupCanteen() {
               </>
             )}
           </div>
-          {selectedRows.length > 0 && (
-            <>
-              <Button
-                onClick={() => openBulkActionDialog("paid")}
-                disabled={bulkUpdatingLoader}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Mark {selectedRows.length} as Paid
-              </Button>
-              <Button
-                onClick={() => openBulkActionDialog("unpaid")}
-                disabled={bulkUpdatingLoader}
-                variant="destructive"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Mark {selectedRows.length} as Unpaid
-              </Button>
-            </>
-          )}
         </div>
         <Button
           onClick={handleSubmitCanteen}
           disabled={!selectedClassId || submittingRecord}
+          className="mt-2 sm:mt-0 w-full sm:w-auto text-xs sm:text-base"
         >
           {submittingRecord ? "Submitting..." : "Submit Canteen Records"}
         </Button>
       </div>
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <Select onValueChange={setSelectedClassId} value={selectedClassId}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Select a class" />
           </SelectTrigger>
           <SelectContent>
@@ -364,7 +346,7 @@ export default function SetupCanteen() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[240px] justify-start text-left font-normal",
+                "w-full sm:w-[240px] justify-start text-left font-normal text-xs sm:text-base",
                 !selectedDate && "text-muted-foreground"
               )}
             >
@@ -385,13 +367,17 @@ export default function SetupCanteen() {
             />
           </PopoverContent>
         </Popover>
-        <Button onClick={handleGenerateRecords} disabled={isGenerating}>
+        <Button
+          onClick={handleGenerateRecords}
+          disabled={isGenerating}
+          className="w-full sm:w-auto text-xs sm:text-base"
+        >
           {isGenerating ? "Generating..." : "Generate Records"}
         </Button>
       </div>
 
       {selectedRows.length > 0 && (
-        <div className="bg-muted/50 p-3 rounded-md mb-4 flex items-center justify-between">
+        <div className="bg-muted/50 p-3 rounded-md mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <p>
             <span className="font-medium">{selectedRows.length}</span> students
             selected
@@ -405,11 +391,13 @@ export default function SetupCanteen() {
       {classesLoading || recordsLoading ? (
         <TableSkeleton />
       ) : (
-        <CanteenTable
-          columns={typedColumns}
-          data={records}
-          onRowSelectionChange={handleRowSelectionChange}
-        />
+        <div className="overflow-x-auto">
+          <CanteenTable
+            columns={typedColumns}
+            data={records}
+            onRowSelectionChange={handleRowSelectionChange}
+          />
+        </div>
       )}
 
       <AlertDialog

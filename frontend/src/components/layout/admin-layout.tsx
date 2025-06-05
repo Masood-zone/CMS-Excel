@@ -6,11 +6,11 @@ import Navbar from "../navbar/admin-navbar";
 
 export default function AdminLayout() {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="overflow-x-hidden w-full max-w-full">
       <AdminSidebar />
-      <SidebarInset>
+      <SidebarInset className="overflow-x-hidden w-full max-w-full">
         <Navbar />
-        <main>
+        <main className="h-full overflow-x-auto">
           <Outlet />
         </main>
         <Toaster />
