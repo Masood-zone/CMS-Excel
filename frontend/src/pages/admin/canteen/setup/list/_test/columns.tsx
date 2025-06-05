@@ -15,7 +15,6 @@ interface CanteenRecord {
   submitedAt: Date;
   hasPaid: boolean;
   isAbsent: boolean;
-  isSubmitted: boolean; // New property to track submission status
 }
 
 export const columns = (
@@ -27,7 +26,8 @@ export const columns = (
     }
   ) => void,
   updatingLoader: boolean,
-  onRowSelectionChange?: (rowId: number, isSelected: boolean) => void
+  onRowSelectionChange?: (rowId: number, isSelected: boolean) => void,
+  isSubmitted?: boolean // new optional param
 ): ColumnDef<CanteenRecord>[] => [
   {
     id: "select",
@@ -74,21 +74,12 @@ export const columns = (
   {
     accessorKey: "hasPaid",
     header: "Payment Status",
-    cell: ({ row }) =>
-      row.original.isAbsent ? (
-        <span className="text-yellow-600 font-semibold">Absent</span>
-      ) : row.original.hasPaid ? (
-        <span className="text-green-600 font-semibold">Paid</span>
-      ) : (
-        <span className="text-red-600 font-semibold">Unpaid</span>
-      ),
+    cell: ({ row }) => (row.original.hasPaid ? "Paid" : "Unpaid"),
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const record = row.original;
-      // Disable all action buttons if any record isSubmitted (i.e., after daily submission)
-      const disableActions = updatingLoader || record.isSubmitted;
       return (
         <div className="flex space-x-2">
           <Button
@@ -99,7 +90,7 @@ export const columns = (
                 isAbsent: false,
               })
             }
-            disabled={disableActions}
+            disabled={updatingLoader || isSubmitted}
             size="sm"
           >
             {record.hasPaid ? "Mark as Unpaid" : "Mark as Paid"}
@@ -110,7 +101,7 @@ export const columns = (
               onClick={() =>
                 handleUpdateStatus(record, { hasPaid: false, isAbsent: true })
               }
-              disabled={disableActions}
+              disabled={updatingLoader || isSubmitted}
               size="sm"
             >
               Mark as Absent
@@ -125,7 +116,7 @@ export const columns = (
                   isAbsent: false,
                 })
               }
-              disabled={disableActions}
+              disabled={updatingLoader || isSubmitted}
               size="sm"
             >
               Mark as Present

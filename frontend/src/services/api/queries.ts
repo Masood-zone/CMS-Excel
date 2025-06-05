@@ -47,6 +47,7 @@ import {
   fetchStudentOwingDetails,
   fetchAllOwingStudents,
   fetchDashboardSummary,
+  fetchClassPrepaymentStatus,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -478,6 +479,22 @@ export const useCreateTeacher = () => {
     },
   });
 };
+
+export const useFetchClassPrepaymentStatus = (
+  classId: number,
+  date?: string
+) => {
+  return useQuery({
+    queryKey: ["prepayments", "class", classId, "status", date],
+    queryFn: () => fetchClassPrepaymentStatus(classId, date),
+    enabled: !!classId,
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch class prepayment status.");
+    },
+  });
+};
+
 /**
  * Mutation: Update a teacher.
  */

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreditCard, Users } from "lucide-react";
-import SetupCanteen from "./list/setup-canteen";
+import SetupCanteen from "./list/_test/setup-canteen";
 import Owings from "../owings/owings";
 
 export default function SetupCanteenTabs() {

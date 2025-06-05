@@ -1,5 +1,17 @@
 import { apiClient } from "../root";
 
+interface PrepaymentStatus {
+  studentId: number;
+  studentName: string;
+  prepaymentId: number;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  durationType: string;
+  durationValue: number;
+  isActive: boolean;
+}
+
 /**
  * Fetch all records.
  */
@@ -154,6 +166,18 @@ export const fetchReferences = async () => {
     console.error("Error fetching references:", error);
     throw error;
   }
+};
+
+// Get class prepayment status for a specific date
+export const fetchClassPrepaymentStatus = async (
+  classId: number,
+  date?: string
+): Promise<PrepaymentStatus[]> => {
+  const params = date ? `?date=${date}` : "";
+  const response = await apiClient.get(
+    `/prepayments/class/${classId}/status${params}`
+  );
+  return response.data;
 };
 
 /**

@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import {
+  useFetchClasses,
+  useStudentRecordsByClassAndDate,
+  useUpdateStudentStatus,
+  useSubmitTeacherRecord,
+  useGenerateStudentRecords,
+  useBulkUpdateStudentStatus,
+} from "@/services/api/queries";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -21,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { CanteenTable } from "@/components/tables/canteen-table";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
-import { columns } from "./columns";
+import { columns } from "../columns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,24 +41,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-  useBulkUpdateStudentStatus,
-  useFetchClasses,
-  useFetchClassPrepaymentStatus,
-  useGenerateStudentRecords,
-  useStudentRecordsByClassAndDate,
-  useSubmitTeacherRecord,
-  useUpdateStudentStatus,
-} from "@/services/api/queries";
-// import { useFetchClasses } from "@/services/api/classes/classes.queries";
-// import {
-//   useBulkUpdateStudentStatus,
-//   useGenerateStudentRecords,
-//   useStudentRecordsByClassAndDate,
-//   useSubmitTeacherRecord,
-//   useUpdateStudentStatus,
-// } from "@/services/api/records/records.queries";
-// import { useFetchClassPrepaymentStatus } from "@/services/api/prepayments/prepayments.queries";
+import { isAfter, isWeekend, startOfToday } from "date-fns";
 
 // Define the Class type
 interface Class {
@@ -70,9 +61,13 @@ export default function SetupCanteen() {
   const [markAllAction, setMarkAllAction] = useState<"paid" | "unpaid" | null>(
     null
   );
-  const [isSubmittedToday, setIsSubmittedToday] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const formattedDate = format(selectedDate, "yyyy-MM-dd");
+  const today = startOfToday();
+  const formattedDate = selectedDate.toISOString().split("T")[0];
+  const isFutureOrWeekend =
+    isAfter(selectedDate, today) || isWeekend(selectedDate);
+
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
   const { data: studentRecords, isLoading: recordsLoading } =
     useStudentRecordsByClassAndDate(
@@ -91,36 +86,19 @@ export default function SetupCanteen() {
     (classItem: Class) => classItem.id === Number.parseInt(selectedClassId)
   )?.supervisorId;
 
-  const { data: prepaymentStatus } = useFetchClassPrepaymentStatus(
-    Number.parseInt(selectedClassId),
-    formattedDate
-  );
-
   useEffect(() => {
-    if (studentRecords && prepaymentStatus) {
-      const updatedRecords = studentRecords.map((record: CanteenRecord) => {
-        // Check if this student has an active prepayment for today
-        const hasActivePrepayment = prepaymentStatus.some(
-          (status) => status.studentId === record.payedBy
-        );
-
-        // If student has active prepayment, mark as paid and prepaid
-        if (hasActivePrepayment) {
-          return {
-            ...record,
-            hasPaid: true,
-            isPrepaid: true,
-          };
-        }
-
-        return record;
-      });
-
-      setRecords(updatedRecords);
-    } else if (studentRecords) {
+    if (studentRecords) {
       setRecords(studentRecords);
     }
-  }, [studentRecords, prepaymentStatus]);
+  }, [studentRecords]);
+
+  useEffect(() => {
+    setIsSubmitted(
+      !!studentRecords &&
+        studentRecords.length > 0 &&
+        studentRecords[0].submitedAt
+    );
+  }, [studentRecords, selectedClassId, formattedDate]);
 
   const handleUpdateStatus = async (
     record: CanteenRecord,
@@ -244,34 +222,19 @@ export default function SetupCanteen() {
     setShowMarkAllDialog(true);
   };
 
-  // Helper to get the submission key for localStorage
-  const getSubmissionKey = (classId: string, date: string) =>
-    `canteen_submitted_${classId}_${date}`;
+  const handleGenerateRecords = () => {
+    generateRecords({
+      classId: Number.parseInt(selectedClassId),
+      date: selectedDate.toISOString(),
+    });
+    setIsSubmitted(true);
+  };
 
-  // Helper to check if the current class/date is submitted
-  const checkIsSubmitted = useCallback((classId: string, date: string) => {
-    if (!classId || !date) return false;
-    return localStorage.getItem(getSubmissionKey(classId, date)) === "true";
-  }, []);
-
-  // State for per-class/date submission
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  // Update isSubmitted whenever class/date changes
-  useEffect(() => {
-    setIsSubmitted(checkIsSubmitted(selectedClassId, formattedDate));
-  }, [selectedClassId, formattedDate, checkIsSubmitted]);
-
-  // Check lockout for selected class/date
-  useEffect(() => {
-    if (!selectedClassId) return;
-    const key = getSubmissionKey(selectedClassId, formattedDate);
-    setIsSubmittedToday(!!localStorage.getItem(key));
-  }, [selectedClassId, formattedDate]);
-
-  // When submitting, set lockout for current class/date
   const handleSubmitCanteen = async () => {
-    if (!selectedClassId) return;
+    if (!selectedClassId) {
+      toast.error("Please select a class before submitting");
+      return;
+    }
 
     const payload = {
       classId: Number.parseInt(selectedClassId),
@@ -308,17 +271,7 @@ export default function SetupCanteen() {
 
     try {
       await submitRecord(payload);
-      // Mark as submitted for today
-      const today = new Date().toISOString().split("T")[0];
-      localStorage.setItem("canteen_last_submitted", today);
-      localStorage.setItem(
-        getSubmissionKey(selectedClassId, formattedDate),
-        "true"
-      );
       setIsSubmitted(true);
-      const key = getSubmissionKey(selectedClassId, formattedDate);
-      localStorage.setItem(key, "1");
-      setIsSubmittedToday(true);
     } catch (error) {
       console.error(error);
       toast.error("Failed to submit canteen records");
@@ -336,52 +289,19 @@ export default function SetupCanteen() {
   const typedColumns: ColumnDef<CanteenRecord, unknown>[] = columns(
     handleUpdateStatus,
     updatingLoader,
-    () => {} // This should be your function that handles row selection changes
+    () => {},
+    isSubmitted // Now pass isSubmitted as the 4th argument
   ) as ColumnDef<CanteenRecord, unknown>[];
 
-  // When records are loaded, mark them as submitted if today is submitted
-  useEffect(() => {
-    if (isSubmittedToday && records.length > 0) {
-      setRecords((prev) => prev.map((r) => ({ ...r, isSubmitted: true })));
-    }
-  }, [isSubmittedToday, records.length]);
-
-  // Helper: get lockout key for current class/date
-  const getLockoutKey = (classId: string, date: string) =>
-    `canteen_submitted_${classId}_${date}`;
-
-  // Check lockout for selected class/date
-  useEffect(() => {
-    if (!selectedClassId) return;
-    const key = getLockoutKey(selectedClassId, formattedDate);
-    setIsSubmittedToday(!!localStorage.getItem(key));
-  }, [selectedClassId, formattedDate]);
-
-  // When generating records, set lockout for current class/date
-  const handleGenerateRecords = async () => {
-    if (!selectedClassId) return;
-    await generateRecords({
-      classId: Number.parseInt(selectedClassId),
-      date: selectedDate.toISOString(),
-    });
-    const key = getLockoutKey(selectedClassId, formattedDate);
-    localStorage.setItem(key, "1");
-    setIsSubmittedToday(true);
-  };
-
-  // Date picker: only allow today and past weekdays (no weekends, no future)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   return (
-    <section className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 w-full max-w-full">
-      <div className="flex flex-col md:flex-row md:justify-between gap-4 mb-6 w-full overflow-x-auto">
-        <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-2 w-full overflow-x-auto">
-          {/* Mark All buttons */}
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+    <section className="container mx-auto px-2 sm:px-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:space-x-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:space-x-2">
+            {/* Mark All buttons */}
             <Button
               onClick={() => openMarkAllDialog("paid")}
-              className="bg-primary hover:bg-foreground whitespace-nowrap"
+              className="bg-green-600 hover:bg-green-700 text-xs sm:text-base"
               disabled={isSubmitted}
             >
               <CheckSquare className="h-4 w-4 mr-2" />
@@ -390,7 +310,7 @@ export default function SetupCanteen() {
             <Button
               onClick={() => openMarkAllDialog("unpaid")}
               variant="destructive"
-              className="whitespace-nowrap"
+              className="text-xs sm:text-base"
               disabled={isSubmitted}
             >
               <XCircle className="h-4 w-4 mr-2" />
@@ -401,7 +321,7 @@ export default function SetupCanteen() {
                 <Button
                   onClick={() => openBulkActionDialog("paid")}
                   disabled={bulkUpdatingLoader || isSubmitted}
-                  className="bg-primary hover:bg-foreground whitespace-nowrap"
+                  className="bg-green-600 hover:bg-green-700 text-xs sm:text-base"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark {selectedRows.length} as Paid
@@ -410,7 +330,7 @@ export default function SetupCanteen() {
                   onClick={() => openBulkActionDialog("unpaid")}
                   disabled={bulkUpdatingLoader || isSubmitted}
                   variant="destructive"
-                  className="whitespace-nowrap"
+                  className="text-xs sm:text-base"
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Mark {selectedRows.length} as Unpaid
@@ -422,12 +342,16 @@ export default function SetupCanteen() {
         <Button
           onClick={handleSubmitCanteen}
           disabled={!selectedClassId || submittingRecord || isSubmitted}
-          className="w-full md:w-auto"
+          className="mt-2 sm:mt-0 w-full sm:w-auto text-xs sm:text-base"
         >
-          {submittingRecord ? "Submitting..." : "Submit Canteen Records"}
+          {submittingRecord
+            ? "Submitting..."
+            : isSubmitted
+            ? "Submitted"
+            : "Submit Canteen Records"}
         </Button>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 w-full overflow-x-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4 mb-6">
         <Select onValueChange={setSelectedClassId} value={selectedClassId}>
           <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Select a class" />
@@ -445,9 +369,10 @@ export default function SetupCanteen() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-full sm:w-[240px] justify-start text-left font-normal",
+                "w-full sm:w-[240px] justify-start text-left font-normal text-xs sm:text-base",
                 !selectedDate && "text-muted-foreground"
               )}
+              disabled={isFutureOrWeekend}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {selectedDate ? (
@@ -461,23 +386,25 @@ export default function SetupCanteen() {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={(date) => {
+                if (date && !isAfter(date, today) && !isWeekend(date))
+                  setSelectedDate(date);
+              }}
               initialFocus
-              disabled={[
-                // Disable weekends
-                { dayOfWeek: [0, 6] },
-                // Disable all future dates
-                { after: new Date() },
-              ]}
+              disabled={(date) => isAfter(date, today) || isWeekend(date)}
             />
           </PopoverContent>
         </Popover>
         <Button
           onClick={handleGenerateRecords}
-          disabled={isGenerating || isSubmittedToday}
-          className="w-full sm:w-auto"
+          disabled={isGenerating || isSubmitted}
+          className="w-full sm:w-auto text-xs sm:text-base"
         >
-          {isGenerating ? "Generating..." : "Generate Records"}
+          {isGenerating
+            ? "Generating..."
+            : isSubmitted
+            ? "Generated"
+            : "Generate Records"}
         </Button>
       </div>
 
@@ -493,17 +420,17 @@ export default function SetupCanteen() {
         </div>
       )}
 
-      <div className="w-full overflow-x-auto">
-        {classesLoading || recordsLoading ? (
-          <TableSkeleton />
-        ) : (
+      {classesLoading || recordsLoading ? (
+        <TableSkeleton />
+      ) : (
+        <div className="overflow-x-auto">
           <CanteenTable
             columns={typedColumns}
             data={records}
             onRowSelectionChange={handleRowSelectionChange}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <AlertDialog
         open={showBulkActionDialog}
@@ -522,7 +449,7 @@ export default function SetupCanteen() {
             <AlertDialogAction
               onClick={handleBulkUpdateStatus}
               className={
-                bulkAction === "paid" ? "bg-primary hover:bg-foreground" : ""
+                bulkAction === "paid" ? "bg-green-600 hover:bg-green-700" : ""
               }
             >
               {bulkUpdatingLoader
@@ -549,7 +476,9 @@ export default function SetupCanteen() {
                 markAllAction && handleMarkAllStudents(markAllAction)
               }
               className={
-                markAllAction === "paid" ? "bg-primary hover:bg-foreground" : ""
+                markAllAction === "paid"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : ""
               }
             >
               {bulkUpdatingLoader
