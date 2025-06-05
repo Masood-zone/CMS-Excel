@@ -2,27 +2,40 @@ import { prisma } from "../db/client";
 
 export const analyticsService = {
   getAdminAnalytics: async () => {
-    const [totalTeachers, totalStudents, totalClasses, settingsAmount] =
-      await Promise.all([
-        prisma.user.count({
-          where: { role: { in: ["TEACHER", "Teacher"] } },
-        }),
-        prisma.student.count(),
-        prisma.class.count(),
-        prisma.settings.findFirst({
-          where: { name: "amount" },
-          select: { value: true },
-        }),
-      ]);
+    const [
+      totalTeachers,
+      totalStudents,
+      totalClasses,
+      settingsAmount,
+      expensesCount,
+      totalExpenses,
+    ] = await Promise.all([
+      prisma.user.count({
+        where: { role: { in: ["TEACHER", "Teacher"] } },
+      }),
+      prisma.student.count(),
+      prisma.class.count(),
+      prisma.settings.findFirst({
+        where: { name: "amount" },
+        select: { value: true },
+      }),
+      prisma.expense.count(),
+      prisma.expense.aggregate({
+        _sum: { amount: true },
+      }),
+    ]);
 
     const amount = settingsAmount ? Number.parseInt(settingsAmount.value) : 0;
     const totalCollections = totalStudents * amount;
+    const totalExpensesValue = totalExpenses._sum.amount || 0;
 
     return {
       totalTeachers,
       totalStudents,
       totalCollections,
       totalClasses,
+      expenses: expensesCount,
+      totalExpenses: totalExpensesValue,
     };
   },
 

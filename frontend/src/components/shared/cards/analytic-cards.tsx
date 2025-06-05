@@ -18,6 +18,7 @@ interface AnalyticsCardProps {
   icon: React.ReactNode;
   notice?: string;
   className?: string;
+  onClick?: () => void;
 }
 
 export function AnalyticsCard({
@@ -27,9 +28,25 @@ export function AnalyticsCard({
   icon,
   notice,
   className,
+  onClick,
 }: AnalyticsCardProps) {
   return (
-    <Card className={className}>
+    <Card
+      className={cn(
+        className,
+        onClick && "cursor-pointer hover:shadow-lg transition-shadow"
+      )}
+      onClick={onClick}
+      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? "button" : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") onClick();
+            }
+          : undefined
+      }
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {icon}
