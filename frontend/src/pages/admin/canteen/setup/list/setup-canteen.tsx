@@ -262,13 +262,6 @@ export default function SetupCanteen() {
     setIsSubmitted(checkIsSubmitted(selectedClassId, formattedDate));
   }, [selectedClassId, formattedDate, checkIsSubmitted]);
 
-  // Check lockout for selected class/date
-  useEffect(() => {
-    if (!selectedClassId) return;
-    const key = getSubmissionKey(selectedClassId, formattedDate);
-    setIsSubmittedToday(!!localStorage.getItem(key));
-  }, [selectedClassId, formattedDate]);
-
   // When submitting, set lockout for current class/date
   const handleSubmitCanteen = async () => {
     if (!selectedClassId) return;

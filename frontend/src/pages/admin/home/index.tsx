@@ -62,7 +62,7 @@ export default function AdminHome() {
             />
             <AnalyticsCard
               title="Expenses"
-              value={`₵${analytics?.expenses || 0}`}
+              value={`${analytics?.expenses || 0}`}
               icon={<ReceiptText className="size-6 text-red-500" />}
               notice="Total number of expense records"
               className="bg-gradient-to-br from-red-50 to-red-100 border-red-200 cursor-pointer"
