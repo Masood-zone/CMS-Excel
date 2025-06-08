@@ -354,30 +354,29 @@ export const useUpdateExpense = () => {
  * Mutation: Update a user by calling upon updateUser function
  */
 export const useUpdateUser = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: FormUser) => updateUser(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success("User updated successfully!");
-    },
-    onError: (error) => {
-      console.error(error);
-      toast.error("Failed to update user. Please try again.");
-    },
-    onSettled: (data) => {
       // Update the user in localStorage after updating
       const existingUser = JSON.parse(localStorage.getItem("user") || "{}");
       const updatedUser = {
         ...existingUser,
         user: {
           ...existingUser.user,
-          email: data?.data.email,
-          gender: data?.data.gender,
-          name: data?.data.name,
-          phone: data?.data.phone,
+          ...response, // Use the updated user data from the API response
         },
       };
-
+      // Refresh page with updated user data
+      window.location.reload();
+      // Update localStorage with the new user data
       localStorage.setItem("user", JSON.stringify(updatedUser));
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to update user. Please try again.");
     },
   });
 };
