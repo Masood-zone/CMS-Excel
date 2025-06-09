@@ -1,10 +1,14 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.teacherService = void 0;
 const user_repository_1 = require("../db/repositories/user-repository");
 const record_repository_1 = require("../db/repositories/record-repository");
 const api_error_1 = require("../utils/api-error");
 const client_1 = require("../db/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 exports.teacherService = {
     getAllTeachers: async () => {
         const teachers = await user_repository_1.userRepository.findTeachers();
@@ -40,6 +44,34 @@ exports.teacherService = {
         return {
             status: "Teacher added successfully",
             data: newTeacher,
+        };
+    },
+    getOwingStudentsInTeacherClass: async (teacherId) => {
+        const teacherClass = await client_1.prisma.class.findFirst({
+            where: { supervisorId: teacherId },
+        });
+        if (!teacherClass) {
+            throw new api_error_1.ApiError(404, "No class found for this teacher");
+        }
+        const owingStudents = await client_1.prisma.student.findMany({
+            where: {
+                classId: teacherClass.id,
+                owing: {
+                    gt: 0,
+                },
+            },
+            orderBy: {
+                owing: "desc",
+            },
+            include: {
+                class: true,
+            },
+        });
+        return {
+            class: teacherClass,
+            owingStudents,
+            totalOwing: owingStudents.reduce((sum, student) => sum + student.owing, 0),
+            count: owingStudents.length,
         };
     },
     updateTeacher: async (id, teacherData) => {
@@ -145,6 +177,26 @@ exports.teacherService = {
             },
         });
         return { supervisor };
+    },
+    resetTeacherPassword: async (id, newPassword) => {
+        if (!newPassword) {
+            throw new api_error_1.ApiError(400, "New password is required");
+        }
+        const teacher = await user_repository_1.userRepository.findById(id, true);
+        if (!teacher || !["TEACHER", "Teacher"].includes(teacher.role)) {
+            throw new api_error_1.ApiError(404, "Teacher not found");
+        }
+        const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
+        const updatedTeacher = await user_repository_1.userRepository.update(id, {
+            password: hashedPassword,
+        });
+        if (!updatedTeacher) {
+            throw new api_error_1.ApiError(500, "Failed to reset password");
+        }
+        return {
+            status: "Password reset successfully",
+            teacherId: id,
+        };
     },
 };
 //# sourceMappingURL=teacher-service.js.map

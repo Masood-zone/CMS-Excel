@@ -8,9 +8,43 @@ const class_repository_1 = require("../db/repositories/class-repository");
 const client_1 = require("@prisma/client");
 const api_error_1 = require("../utils/api-error");
 const client_2 = require("../db/client");
+const owing_service_1 = require("./owing-service");
 exports.recordService = {
     getAllRecords: async () => {
         return record_repository_1.recordRepository.findAll();
+    },
+    getDashboardSummary: async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const records = await client_2.prisma.record.findMany({
+            where: {
+                submitedAt: {
+                    gte: today,
+                },
+            },
+            include: {
+                student: true,
+                class: true,
+            },
+        });
+        const paidStudents = records.filter((record) => record.hasPaid);
+        const unpaidStudents = records.filter((record) => !record.hasPaid && !record.isAbsent);
+        const absentStudents = records.filter((record) => record.isAbsent);
+        const totalPaid = paidStudents.reduce((sum, record) => sum + (record.settingsAmount || 0), 0);
+        const totalUnpaid = unpaidStudents.reduce((sum, record) => sum + (record.settingsAmount || 0), 0);
+        const totalAmount = records.reduce((sum, record) => sum + (record.settingsAmount || 0), 0);
+        return {
+            summary: {
+                totalAmount,
+                totalStudents: records.length,
+                totalPaid,
+                totalUnpaid,
+                paidStudentsCount: paidStudents.length,
+                unpaidStudentsCount: unpaidStudents.length,
+                absentStudentsCount: absentStudents.length,
+            },
+            records,
+        };
     },
     generateDailyRecords: async (options) => {
         const { classId, date } = options;
@@ -68,7 +102,7 @@ exports.recordService = {
         try {
             const studentsInClass = await student_repository_1.studentRepository.findByClassId(classId);
             const settings = await settings_repository_1.settingsRepository.findByName("amount");
-            const settingsAmount = settings ? parseInt(settings.value) : 0;
+            const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
             const existingRecords = await record_repository_1.recordRepository.findByClassAndDate(classId, date);
             const recordMap = new Map(existingRecords.map((record) => [record.payedBy, record]));
             const allRecords = await Promise.all(studentsInClass.map(async (student) => {
@@ -264,66 +298,237 @@ exports.recordService = {
         const startOfDay = new Date(parsedDate);
         startOfDay.setHours(0, 0, 0, 0);
         const allStudents = [...unpaidStudents, ...paidStudents, ...absentStudents];
-        const updatedRecords = await client_2.prisma.$transaction(allStudents.map((student) => {
-            var _a, _b;
-            return client_2.prisma.record.upsert({
+        const settings = await client_2.prisma.settings.findFirst({
+            where: { name: "amount" },
+        });
+        const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
+        const updatedRecords = [];
+        const studentsToUpdate = [];
+        for (const student of allStudents) {
+            const studentId = Number.parseInt(student.paidBy);
+            const isAbsent = absentStudents.some((s) => s.paidBy === student.paidBy);
+            const hasPaid = student.hasPaid;
+            const amount = student.amount || student.amount_owing || 0;
+            const currentStudent = await client_2.prisma.student.findUnique({
+                where: { id: studentId },
+            });
+            if (!currentStudent)
+                continue;
+            const currentOwing = currentStudent.owing;
+            const record = await client_2.prisma.record.upsert({
                 where: {
                     payedBy_submitedAt: {
-                        payedBy: parseInt(student.paidBy),
+                        payedBy: studentId,
                         submitedAt: startOfDay,
                     },
                 },
                 update: {
-                    amount: student.amount || student.amount_owing || 0,
-                    hasPaid: student.hasPaid,
-                    isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
+                    amount: amount,
+                    hasPaid: hasPaid,
+                    isAbsent: isAbsent,
                     submitedBy: submittedBy,
+                    owingBefore: currentOwing,
+                    owingAfter: currentOwing,
                 },
                 create: {
-                    classId: parseInt(classId.toString()),
-                    payedBy: parseInt(student.paidBy),
+                    classId: Number.parseInt(classId.toString()),
+                    payedBy: studentId,
                     submitedAt: startOfDay,
-                    amount: (_b = (_a = student.amount) !== null && _a !== void 0 ? _a : student.amount_owing) !== null && _b !== void 0 ? _b : 0,
-                    hasPaid: student.hasPaid,
-                    isAbsent: absentStudents.some((s) => s.paidBy === student.paidBy),
+                    amount: amount,
+                    hasPaid: hasPaid,
+                    isAbsent: isAbsent,
                     submitedBy: submittedBy,
-                    settingsAmount: student.amount || student.amount_owing,
+                    settingsAmount: settingsAmount,
+                    owingBefore: currentOwing,
+                    owingAfter: currentOwing,
                 },
             });
-        }));
+            updatedRecords.push(record);
+            if (!hasPaid && !isAbsent) {
+                studentsToUpdate.push({
+                    studentId,
+                    recordId: record.id,
+                    currentOwing,
+                    settingsAmount,
+                });
+            }
+        }
+        if (studentsToUpdate.length > 0) {
+            (0, owing_service_1.scheduleOwingUpdate)(studentsToUpdate, 1 * 60 * 1000);
+        }
         return updatedRecords;
     },
     updateStudentStatus: async (id, statusData) => {
-        const { hasPaid, isAbsent } = statusData;
+        const { hasPaid, isAbsent, paymentAmount } = statusData;
         if (typeof hasPaid !== "boolean" || typeof isAbsent !== "boolean") {
             throw new api_error_1.ApiError(400, "Invalid input data");
         }
-        return record_repository_1.recordRepository.updateStudentStatus(id, { hasPaid, isAbsent });
+        const record = await record_repository_1.recordRepository.findById(id);
+        if (!record) {
+            throw new api_error_1.ApiError(404, "Record not found");
+        }
+        const student = await student_repository_1.studentRepository.findById(record.payedBy || 0);
+        if (!student) {
+            throw new api_error_1.ApiError(404, "Student not found");
+        }
+        const settings = await client_2.prisma.settings.findFirst({
+            where: { name: "amount" },
+        });
+        const settingsAmount = settings
+            ? Number.parseInt(settings.value)
+            : record.settingsAmount || 0;
+        const currentOwing = student.owing;
+        let amountPaid = 0;
+        if (hasPaid) {
+            if (paymentAmount !== undefined && paymentAmount > 0) {
+                amountPaid = paymentAmount;
+            }
+            else {
+                amountPaid = settingsAmount;
+            }
+        }
+        const updatedRecord = await record_repository_1.recordRepository.update(id, {
+            hasPaid,
+            isAbsent,
+            amount: amountPaid,
+            owingBefore: currentOwing,
+            owingAfter: currentOwing,
+        });
+        if (!hasPaid && !isAbsent) {
+            (0, owing_service_1.scheduleOwingUpdate)([
+                {
+                    studentId: student.id,
+                    recordId: id,
+                    currentOwing,
+                    settingsAmount,
+                },
+            ], 1 * 60 * 1000);
+        }
+        else if (record.hasPaid === false && record.isAbsent === false) {
+        }
+        return updatedRecord;
+    },
+    bulkUpdateStudentStatus: async (recordsData) => {
+        const updatedRecords = [];
+        const studentsToUpdate = [];
+        await client_2.prisma.$transaction(async (tx) => {
+            for (const recordData of recordsData) {
+                const { id, hasPaid, isAbsent, submitedBy, date } = recordData;
+                const currentRecord = await tx.record.findUnique({
+                    where: { id },
+                    include: { teacher: true, student: true, class: true },
+                });
+                if (!currentRecord) {
+                    console.warn(`Record with id ${id} not found, skipping`);
+                    continue;
+                }
+                const student = await tx.student.findUnique({
+                    where: { id: currentRecord.payedBy || 0 },
+                });
+                if (!student) {
+                    console.warn(`Student for record ${id} not found, skipping`);
+                    continue;
+                }
+                const currentOwing = student.owing;
+                const settings = await tx.settings.findFirst({
+                    where: { name: "amount" },
+                });
+                const settingsAmount = settings
+                    ? Number.parseInt(settings.value)
+                    : currentRecord.settingsAmount || 0;
+                let amountPaid = 0;
+                if (hasPaid) {
+                    amountPaid = settingsAmount;
+                }
+                const updatedRecord = await tx.record.update({
+                    where: { id },
+                    data: {
+                        hasPaid,
+                        isAbsent,
+                        amount: amountPaid,
+                        submitedBy: submitedBy || currentRecord.submitedBy,
+                        submitedAt: date ? new Date(date) : currentRecord.submitedAt,
+                        owingBefore: currentOwing,
+                        owingAfter: currentOwing,
+                    },
+                });
+                updatedRecords.push(Object.assign(Object.assign({}, updatedRecord), { teacher: currentRecord.teacher || null, student: currentRecord.student || null, class: currentRecord.class || null }));
+                if (!hasPaid && !isAbsent) {
+                    studentsToUpdate.push({
+                        studentId: student.id,
+                        recordId: id,
+                        currentOwing,
+                        settingsAmount,
+                    });
+                }
+            }
+        });
+        if (studentsToUpdate.length > 0) {
+            (0, owing_service_1.scheduleOwingUpdate)(studentsToUpdate, 1 * 60 * 1000);
+        }
+        return updatedRecords;
     },
     updateRecord: async (id, recordData) => {
         const { amount, submitedBy, payedBy, isPrepaid, hasPaid, classId, isAbsent, } = recordData;
-        return record_repository_1.recordRepository.update(id, {
+        const currentRecord = await record_repository_1.recordRepository.findById(id);
+        if (!currentRecord) {
+            throw new api_error_1.ApiError(404, "Record not found");
+        }
+        const updatedRecord = await record_repository_1.recordRepository.update(id, {
             amount: amount !== undefined
                 ? typeof amount === "string"
-                    ? parseInt(amount)
+                    ? Number.parseInt(amount)
                     : amount
                 : undefined,
-            submitedAt: submitedBy !== undefined
-                ? typeof submitedBy === "string"
-                    ? new Date(submitedBy)
-                    : new Date(submitedBy)
+            teacher: submitedBy !== undefined
+                ? {
+                    connect: {
+                        id: typeof submitedBy === "string"
+                            ? Number.parseInt(submitedBy)
+                            : submitedBy,
+                    },
+                }
+                : undefined,
+            student: payedBy !== undefined
+                ? {
+                    connect: {
+                        id: typeof payedBy === "string"
+                            ? Number.parseInt(payedBy)
+                            : payedBy,
+                    },
+                }
                 : undefined,
             isPrepaid: isPrepaid !== undefined ? Boolean(isPrepaid) : undefined,
             hasPaid: hasPaid !== undefined ? Boolean(hasPaid) : undefined,
             class: classId !== undefined
                 ? {
                     connect: {
-                        id: typeof classId === "string" ? parseInt(classId) : classId,
+                        id: typeof classId === "string"
+                            ? Number.parseInt(classId)
+                            : classId,
                     },
                 }
                 : undefined,
             isAbsent: isAbsent !== undefined ? Boolean(isAbsent) : undefined,
         });
+        if (hasPaid !== undefined &&
+            isAbsent !== undefined &&
+            !hasPaid &&
+            !isAbsent &&
+            (currentRecord.hasPaid || currentRecord.isAbsent)) {
+            const student = await student_repository_1.studentRepository.findById(currentRecord.payedBy || 0);
+            if (student) {
+                (0, owing_service_1.scheduleOwingUpdate)([
+                    {
+                        studentId: student.id,
+                        recordId: id,
+                        currentOwing: student.owing,
+                        settingsAmount: currentRecord.settingsAmount || 0,
+                    },
+                ], 1 * 60 * 1000);
+            }
+        }
+        return updatedRecord;
     },
     deleteRecord: async (id) => {
         return record_repository_1.recordRepository.delete(id);

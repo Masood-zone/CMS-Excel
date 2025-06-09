@@ -4,7 +4,7 @@ exports.analyticsService = void 0;
 const client_1 = require("../db/client");
 exports.analyticsService = {
     getAdminAnalytics: async () => {
-        const [totalTeachers, totalStudents, totalClasses, settingsAmount] = await Promise.all([
+        const [totalTeachers, totalStudents, totalClasses, settingsAmount, expensesCount, totalExpenses,] = await Promise.all([
             client_1.prisma.user.count({
                 where: { role: { in: ["TEACHER", "Teacher"] } },
             }),
@@ -14,14 +14,21 @@ exports.analyticsService = {
                 where: { name: "amount" },
                 select: { value: true },
             }),
+            client_1.prisma.expense.count(),
+            client_1.prisma.expense.aggregate({
+                _sum: { amount: true },
+            }),
         ]);
         const amount = settingsAmount ? Number.parseInt(settingsAmount.value) : 0;
         const totalCollections = totalStudents * amount;
+        const totalExpensesValue = totalExpenses._sum.amount || 0;
         return {
             totalTeachers,
             totalStudents,
             totalCollections,
             totalClasses,
+            expenses: expensesCount,
+            totalExpenses: totalExpensesValue,
         };
     },
     getTeacherAnalytics: async (classId) => {

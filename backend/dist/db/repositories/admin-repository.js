@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userRepository = void 0;
+exports.adminRepository = void 0;
 const client_1 = require("../client");
-exports.userRepository = {
-    findAll: async (options) => {
+exports.adminRepository = {
+    findAllAdmins: async () => {
         return client_1.prisma.user.findMany({
             select: {
                 id: true,
@@ -14,10 +14,12 @@ exports.userRepository = {
                 gender: true,
                 assigned_class: true,
             },
-            where: (options === null || options === void 0 ? void 0 : options.role) ? { role: { in: [options.role] } } : undefined,
+            where: {
+                role: { in: ["SUPER_ADMIN", "ADMIN"] },
+            },
         });
     },
-    findById: async (id, includePassword = false) => {
+    findById: async (id) => {
         return client_1.prisma.user.findUnique({
             where: { id },
             select: {
@@ -27,7 +29,6 @@ exports.userRepository = {
                 phone: true,
                 role: true,
                 gender: true,
-                password: includePassword,
                 assigned_class: true,
             },
         });
@@ -39,7 +40,7 @@ exports.userRepository = {
     },
     create: async (data) => {
         return client_1.prisma.user.create({
-            data,
+            data: Object.assign(Object.assign({}, data), { role: "SUPER_ADMIN" }),
         });
     },
     update: async (id, data) => {
@@ -53,19 +54,5 @@ exports.userRepository = {
             where: { id },
         });
     },
-    findTeachers: async () => {
-        return client_1.prisma.user.findMany({
-            select: {
-                id: true,
-                name: true,
-                role: true,
-                email: true,
-                phone: true,
-                gender: true,
-                assigned_class: true,
-            },
-            where: { role: { in: ["Teacher", "TEACHER"] } },
-        });
-    },
 };
-//# sourceMappingURL=user-repository.js.map
+//# sourceMappingURL=admin-repository.js.map

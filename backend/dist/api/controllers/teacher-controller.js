@@ -17,6 +17,14 @@ exports.teacherController = {
         const result = await teacher_service_1.teacherService.getTeacherById(id);
         res.status(200).json(result);
     }),
+    getOwingStudentsInClass: (0, catch_async_1.catchAsync)(async (req, res) => {
+        const id = Number.parseInt(req.params.id);
+        if (isNaN(id)) {
+            throw new api_error_1.ApiError(400, "Invalid teacher ID");
+        }
+        const result = await teacher_service_1.teacherService.getOwingStudentsInTeacherClass(id);
+        res.json(result);
+    }),
     getTeacherRecords: (0, catch_async_1.catchAsync)(async (req, res) => {
         const id = Number.parseInt(req.params.id);
         if (isNaN(id)) {
@@ -80,6 +88,12 @@ exports.teacherController = {
         }
         const result = await teacher_service_1.teacherService.getClassBySupervisorId(id);
         res.json(result);
+    }),
+    resetPassword: (0, catch_async_1.catchAsync)(async (req, res) => {
+        const { id } = req.params;
+        const { password } = req.body;
+        const result = await teacher_service_1.teacherService.resetTeacherPassword(Number(id), password);
+        res.status(200).json(result);
     }),
 };
 //# sourceMappingURL=teacher-controller.js.map

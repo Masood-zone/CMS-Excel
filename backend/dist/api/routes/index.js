@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupRoutes = void 0;
 const auth_routes_1 = require("./auth-routes");
 const user_routes_1 = require("./user-routes");
+const admin_routes_1 = require("./admin-routes");
 const class_routes_1 = require("./class-routes");
 const student_routes_1 = require("./student-routes");
 const record_routes_1 = require("./record-routes");
@@ -13,6 +14,7 @@ const reference_routes_1 = require("./reference-routes");
 const analytics_routes_1 = require("./analytics-routes");
 const setupRoutes = (app) => {
     app.use("/auth", auth_routes_1.authRoutes);
+    app.use("/admins", admin_routes_1.adminRoutes);
     app.use("/users", user_routes_1.userRoutes);
     app.use("/classes", class_routes_1.classRoutes);
     app.use("/students", student_routes_1.studentRoutes);

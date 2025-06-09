@@ -9,8 +9,14 @@ exports.recordController = {
         const records = await record_service_1.recordService.getAllRecords();
         res.status(200).json(records);
     }),
+    getDashboardSummary: (0, catch_async_1.catchAsync)(async (req, res) => {
+        const summary = await record_service_1.recordService.getDashboardSummary();
+        res.status(200).json(summary);
+    }),
     generateDailyRecords: (0, catch_async_1.catchAsync)(async (req, res) => {
-        const classId = req.params.classId ? Number.parseInt(req.params.classId) : undefined;
+        const classId = req.params.classId
+            ? Number.parseInt(req.params.classId)
+            : undefined;
         const date = new Date(req.query.date);
         if (isNaN(date.getTime())) {
             throw new api_error_1.ApiError(400, "Invalid date");
@@ -59,9 +65,26 @@ exports.recordController = {
     }),
     updateStudentStatus: (0, catch_async_1.catchAsync)(async (req, res) => {
         const { id } = req.params;
-        const { hasPaid, isAbsent } = req.body;
-        const updatedRecord = await record_service_1.recordService.updateStudentStatus(Number.parseInt(id), { hasPaid, isAbsent });
+        const { hasPaid, isAbsent, paymentAmount } = req.body;
+        const updatedRecord = await record_service_1.recordService.updateStudentStatus(Number.parseInt(id), {
+            hasPaid,
+            isAbsent,
+            paymentAmount: paymentAmount
+                ? Number.parseFloat(paymentAmount)
+                : undefined,
+        });
         res.status(200).json(updatedRecord);
+    }),
+    bulkUpdateStudentStatus: (0, catch_async_1.catchAsync)(async (req, res) => {
+        const { records } = req.body;
+        if (!Array.isArray(records) || records.length === 0) {
+            throw new api_error_1.ApiError(400, "Invalid request: records must be a non-empty array");
+        }
+        const updatedRecords = await record_service_1.recordService.bulkUpdateStudentStatus(records);
+        res.status(200).json({
+            message: `Successfully updated ${updatedRecords.length} records`,
+            records: updatedRecords,
+        });
     }),
     update: (0, catch_async_1.catchAsync)(async (req, res) => {
         const { id } = req.params;

@@ -6,10 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupDailyRecordCreation = void 0;
 const client_1 = require("@prisma/client");
 const node_cron_1 = __importDefault(require("node-cron"));
+const logger_1 = require("../../utils/logger");
 const prisma = new client_1.PrismaClient();
 const setupDailyRecordCreation = () => {
-    node_cron_1.default.schedule("05 16 * * *", async () => {
-        console.log("Running daily record creation job");
+    const hours = process.env.DAILY_RECORD_HOUR || "06";
+    const minutes = process.env.DAILY_RECORD_MINUTE || "00";
+    node_cron_1.default.schedule(`${minutes} ${hours} * * *`, async () => {
+        logger_1.logger.info("Running daily record creation job");
         try {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -19,12 +22,22 @@ const setupDailyRecordCreation = () => {
             const settings = await prisma.settings.findFirst({
                 where: { name: "amount" },
             });
-            const settingsAmount = settings ? parseInt(settings.value) : 0;
+            const settingsAmount = settings ? Number.parseInt(settings.value) : 0;
             let createdRecords = 0;
             let skippedRecords = 0;
+            let skippedOwingStudents = 0;
             for (const classItem of classes) {
                 for (const student of classItem.students) {
                     try {
+                        const currentStudent = await prisma.student.findUnique({
+                            where: { id: student.id },
+                        });
+                        const currentOwing = (currentStudent === null || currentStudent === void 0 ? void 0 : currentStudent.owing) || 0;
+                        if (currentOwing > 0) {
+                            skippedOwingStudents++;
+                            logger_1.logger.info(`Skipped record generation for student ${student.id} with owing amount ${currentOwing}`);
+                            continue;
+                        }
                         await prisma.record.create({
                             data: {
                                 classId: classItem.id,
@@ -36,6 +49,8 @@ const setupDailyRecordCreation = () => {
                                 isAbsent: false,
                                 settingsAmount,
                                 submitedBy: classItem.supervisorId || classItem.id,
+                                owingBefore: currentOwing,
+                                owingAfter: currentOwing,
                             },
                         });
                         createdRecords++;
@@ -50,10 +65,10 @@ const setupDailyRecordCreation = () => {
                     }
                 }
             }
-            console.log(`Daily record creation job completed successfully. Created: ${createdRecords}, Skipped: ${skippedRecords}`);
+            logger_1.logger.info(`Daily record creation job completed successfully. Created: ${createdRecords}, Skipped due to existing records: ${skippedRecords}, Skipped due to owing: ${skippedOwingStudents}`);
         }
         catch (error) {
-            console.error("Error in daily record creation job:", error);
+            logger_1.logger.error("Error in daily record creation job:", error);
         }
     });
 };
