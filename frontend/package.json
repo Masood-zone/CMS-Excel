@@ -5,10 +5,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:production": "tsc && vite build --mode production",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "start": "node server.js",
+    "build:plesk": "./build-plesk.sh",
+    "deploy:plesk": "./deploy-plesk.sh"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.2",
