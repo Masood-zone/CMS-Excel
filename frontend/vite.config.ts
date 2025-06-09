@@ -5,7 +5,7 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: mode === "production" ? "/" : "/",
+  base: "/",
   build: {
     outDir: "dist",
     assetsDir: "assets",
@@ -13,6 +13,12 @@ export default defineConfig(({ mode }) => ({
     minify: mode === "production" ? "esbuild" : false,
     rollupOptions: {
       output: {
+        // Ensure proper format for module scripts
+        format: "es",
+        // Ensure proper file extensions
+        entryFileNames: "assets/[name].[hash].js",
+        chunkFileNames: "assets/[name].[hash].js",
+        assetFileNames: "assets/[name].[hash].[ext]",
         manualChunks: {
           vendor: ["react", "react-dom"],
           router: ["react-router-dom"],
