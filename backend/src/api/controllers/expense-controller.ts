@@ -5,7 +5,13 @@ import { catchAsync } from "../../utils/catch-async";
 
 export const expenseController = {
   getAllExpenses: catchAsync(async (req: Request, res: Response) => {
-    const expenses = await expenseService.getAllExpenses();
+    const { termId, from, to, period } = req.query;
+    const options: any = {};
+    if (termId) options.termId = Number(termId);
+    if (from) options.from = String(from);
+    if (to) options.to = String(to);
+    if (period) options.period = String(period);
+    const expenses = await expenseService.getAllExpenses(options);
     res.status(200).json(expenses);
   }),
 

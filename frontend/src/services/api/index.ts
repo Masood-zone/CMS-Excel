@@ -312,17 +312,30 @@ export const fetchStudentsInClass = async (id: number) => {
 /**
  * Fetch all expenses.
  */
-export const fetchExpenses = async (termId?: number) => {
-  try {
-    const url = termId ? `/expenses?termId=${termId}` : "/expenses";
-    const response = await apiClient.get(url);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching expenses:", error);
-    throw error;
+export const fetchExpenses = async (
+  termId?: number,
+  params?: {
+    period?: string;
+    from?: string;
+    to?: string;
   }
+) => {
+  const url = "/expenses";
+  const query: Record<string, string> = {};
+  if (typeof termId === "number" && !isNaN(termId)) {
+    query.termId = String(termId);
+  }
+  if (params) {
+    if (params.period) query.period = params.period;
+    if (params.from) query.from = params.from;
+    if (params.to) query.to = params.to;
+  }
+  const queryString = Object.keys(query).length
+    ? "?" + new URLSearchParams(query).toString()
+    : "";
+  const response = await apiClient.get(url + queryString);
+  return response.data;
 };
-
 /**
  * Create a new expense.
  */

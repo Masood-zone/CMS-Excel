@@ -2,8 +2,24 @@ import { prisma } from "../client";
 import type { Prisma } from "@prisma/client";
 
 export const expenseRepository = {
-  findAll: async () => {
+  findAll: async (options?: {
+    termId?: number;
+    from?: string;
+    to?: string;
+    period?: string;
+  }) => {
+    const where: Prisma.ExpenseWhereInput = {};
+    if (options?.termId) {
+      where.termId = options.termId;
+    }
+    if (options?.from || options?.to) {
+      where.date = {};
+      if (options.from) (where.date as any).gte = new Date(options.from);
+      if (options.to) (where.date as any).lte = new Date(options.to);
+    }
+    // Optionally, add period-based filtering here if needed
     return prisma.expense.findMany({
+      where,
       include: {
         reference: true,
       },

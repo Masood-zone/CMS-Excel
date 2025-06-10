@@ -230,10 +230,17 @@ export const useFetchStudent = (id: number) => {
 /**
  * Query: Fetch all expenses.
  */
-export const useFetchExpenses = (termId?: number) => {
+export const useFetchExpenses = (
+  termId?: number,
+  filter?: {
+    period?: string;
+    from?: string;
+    to?: string;
+  }
+) => {
   return useQuery({
-    queryKey: ["expenses", termId],
-    queryFn: () => fetchExpenses(termId),
+    queryKey: ["expenses", termId, filter],
+    queryFn: () => fetchExpenses(termId, filter),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch expenses.");
