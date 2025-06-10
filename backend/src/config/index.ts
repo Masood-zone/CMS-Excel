@@ -8,7 +8,8 @@ export const config = {
     port: process.env.PORT || 3400,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || "https://canteen.gerizimheights.org",
+    // Allow all origins in production
+    origin: process.env.CORS_ORIGIN || "*",
     optionsSuccessStatus: 200,
   },
   jwt: {
