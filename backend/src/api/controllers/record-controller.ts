@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { recordService } from "../../services/record-service";
 import { catchAsync } from "../../utils/catch-async";
 import { ApiError } from "../../utils/api-error";
+import { requireActiveTerm } from "./term-controller";
 
 export const recordController = {
   getAllRecords: catchAsync(async (req: Request, res: Response) => {
@@ -15,6 +16,10 @@ export const recordController = {
   }),
 
   generateDailyRecords: catchAsync(async (req: Request, res: Response) => {
+    const activeTerm = (req as any).activeTerm;
+    if (!activeTerm) {
+      throw new ApiError(403, "No active term found");
+    }
     const classId = req.params.classId
       ? Number.parseInt(req.params.classId)
       : undefined;
@@ -24,7 +29,11 @@ export const recordController = {
       throw new ApiError(400, "Invalid date");
     }
 
-    const result = await recordService.generateDailyRecords({ classId, date });
+    const result = await recordService.generateDailyRecords({
+      classId,
+      date,
+      termId: activeTerm.id,
+    });
 
     res.status(200).json({
       message: "Daily records generated successfully",
@@ -91,8 +100,15 @@ export const recordController = {
   ),
 
   submitTeacherRecord: catchAsync(async (req: Request, res: Response) => {
-    const updatedRecords = await recordService.submitTeacherRecord(req.body);
-    res.status(201).json(updatedRecords);
+    const activeTerm = (req as any).activeTerm;
+    if (!activeTerm) {
+      throw new ApiError(403, "No active term found");
+    }
+    const result = await recordService.submitTeacherRecord(
+      req.body,
+      activeTerm.id
+    );
+    res.status(200).json(result);
   }),
 
   updateStudentStatus: catchAsync(async (req: Request, res: Response) => {
@@ -113,21 +129,15 @@ export const recordController = {
     res.status(200).json(updatedRecord);
   }),
   bulkUpdateStudentStatus: catchAsync(async (req: Request, res: Response) => {
-    const { records } = req.body;
-
-    if (!Array.isArray(records) || records.length === 0) {
-      throw new ApiError(
-        400,
-        "Invalid request: records must be a non-empty array"
-      );
+    const activeTerm = (req as any).activeTerm;
+    if (!activeTerm) {
+      throw new ApiError(403, "No active term found");
     }
-
-    const updatedRecords = await recordService.bulkUpdateStudentStatus(records);
-
-    res.status(200).json({
-      message: `Successfully updated ${updatedRecords.length} records`,
-      records: updatedRecords,
-    });
+    const result = await recordService.bulkUpdateStudentStatus(
+      req.body,
+      activeTerm.id
+    );
+    res.status(200).json(result);
   }),
 
   update: catchAsync(async (req: Request, res: Response) => {
@@ -145,3 +155,9 @@ export const recordController = {
     res.status(204).send();
   }),
 };
+
+// In your router, apply requireActiveTerm to record creation endpoints
+// Example for record-routes.ts:
+// router.post("/generate-daily", requireActiveTerm, recordController.generateDailyRecords);
+// router.post("/submit", requireActiveTerm, recordController.submitTeacherRecord);
+// router.post("/bulk-update-status", requireActiveTerm, recordController.bulkUpdateStudentStatus);

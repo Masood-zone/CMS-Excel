@@ -10,6 +10,7 @@ import { teacherRoutes } from "./teacher-routes";
 import { expenseRoutes } from "./expense-routes";
 import { referenceRoutes } from "./reference-routes";
 import { analyticsRoutes } from "./analytics-routes";
+import { termRoutes } from "./term-routes";
 
 export const setupRoutes = (app: Express) => {
   app.use("/auth", authRoutes);
@@ -23,4 +24,5 @@ export const setupRoutes = (app: Express) => {
   app.use("/expenses", expenseRoutes);
   app.use("/references", referenceRoutes);
   app.use("/analytics", analyticsRoutes);
+  app.use("/terms", termRoutes);
 };

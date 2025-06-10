@@ -16,7 +16,12 @@ export const expenseController = {
   }),
 
   createExpense: catchAsync(async (req: Request, res: Response) => {
-    const expense = await expenseService.createExpense(req.body);
+    // Get active term from middleware
+    const activeTerm = (req as any).activeTerm;
+    if (!activeTerm) {
+      throw new Error("No active term found");
+    }
+    const expense = await expenseService.createExpense(req.body, activeTerm.id);
     res.status(201).json(expense);
   }),
 

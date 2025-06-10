@@ -48,6 +48,7 @@ import {
   fetchAllOwingStudents,
   fetchDashboardSummary,
   fetchClassPrepaymentStatus,
+  fetchAllTermsAnalytics,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -948,28 +949,42 @@ export const useGetPresetAmount = () => {
 /**
  * Query: Admin's Analytics
  */
-export const useAdminDashboardAnalytics = () => {
-  // const { token } = useAuthStore();
+export const useAdminDashboardAnalytics = (termId?: number) => {
   return useQuery({
-    queryKey: ["adminAnalytics"],
-    queryFn: fetchAdminAnalytics,
+    queryKey: ["adminAnalytics", termId],
+    queryFn: () => fetchAdminAnalytics(termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch admin analytics.");
     },
-    // enabled: token,
   });
 };
+
 /**
  * Query: Teacher's Analytics
  */
-export const useTeacherAnalytics = (id: number) => {
+export const useTeacherAnalytics = (classId: number, termId?: number) => {
   return useQuery({
-    queryKey: ["teacherAnalytics", id],
-    queryFn: () => fetchTeacherAnalytics(id),
+    queryKey: ["teacherAnalytics", classId, termId],
+    queryFn: () => fetchTeacherAnalytics(classId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch teacher analytics.");
+    },
+  });
+}
+
+
+/**
+ * Query: All Terms Analytics
+ */
+export const useAllTermsAnalytics = () => {
+  return useQuery({
+    queryKey: ["allTermsAnalytics"],
+    queryFn: fetchAllTermsAnalytics,
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch all terms analytics.");
     },
   });
 };

@@ -22,9 +22,12 @@ export const expenseRepository = {
     });
   },
 
-  create: async (data: Prisma.ExpenseCreateInput) => {
+  create: async (data: Prisma.ExpenseCreateInput, termId?: number) => {
     return prisma.expense.create({
-      data,
+      data: {
+        ...data,
+        term: termId ? { connect: { id: termId } } : undefined,
+      },
       include: {
         reference: true,
       },

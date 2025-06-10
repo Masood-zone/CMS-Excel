@@ -12,10 +12,13 @@ export const recordRepository = {
     });
   },
 
-  create: async (data: Prisma.RecordCreateInput) => {
+  create: async (data: Prisma.RecordCreateInput, termId?: number) => {
     return prisma.record.create({
-      data,
-      include: { student: true }, // Ensure student is returned
+      data: {
+        ...data,
+        term: termId ? { connect: { id: termId } } : undefined,
+      },
+      include: { student: true },
     });
   },
 

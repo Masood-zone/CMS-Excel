@@ -64,8 +64,12 @@ export const recordService = {
     };
   },
 
-  generateDailyRecords: async (options: { classId?: number; date: Date }) => {
-    const { classId, date } = options;
+  generateDailyRecords: async (options: {
+    classId?: number;
+    date: Date;
+    termId?: number;
+  }) => {
+    const { classId, date, termId } = options;
     const formattedDate = new Date(date);
     formattedDate.setHours(0, 0, 0, 0);
 
@@ -89,17 +93,20 @@ export const recordService = {
 
       for (const student of students) {
         try {
-          const record = await recordRepository.create({
-            class: { connect: { id: classItem.id } },
-            student: { connect: { id: student.id } },
-            submitedAt: formattedDate,
-            amount: 0,
-            hasPaid: false,
-            isPrepaid: false,
-            isAbsent: false,
-            settingsAmount,
-            teacher: { connect: { id: classItem.supervisorId || 0 } },
-          });
+          const record = await recordRepository.create(
+            {
+              class: { connect: { id: classItem.id } },
+              student: { connect: { id: student.id } },
+              submitedAt: formattedDate,
+              amount: 0,
+              hasPaid: false,
+              isPrepaid: false,
+              isAbsent: false,
+              settingsAmount,
+              teacher: { connect: { id: classItem.supervisorId || 0 } },
+            },
+            termId
+          );
           createdRecords.push(record);
         } catch (error) {
           // If a record already exists for this student on this day, skip it
@@ -351,29 +358,32 @@ export const recordService = {
     return Object.values(groupedRecords);
   },
 
-  submitTeacherRecord: async (recordData: {
-    classId: number;
-    date: string;
-    unpaidStudents: Array<{
-      paidBy: string;
-      amount?: number;
-      amount_owing?: number;
-      hasPaid: boolean;
-    }>;
-    paidStudents: Array<{
-      paidBy: string;
-      amount?: number;
-      amount_owing?: number;
-      hasPaid: boolean;
-    }>;
-    absentStudents: Array<{
-      paidBy: string;
-      amount?: number;
-      amount_owing?: number;
-      hasPaid: boolean;
-    }>;
-    submittedBy: number;
-  }) => {
+  submitTeacherRecord: async (
+    recordData: {
+      classId: number;
+      date: string;
+      unpaidStudents: Array<{
+        paidBy: string;
+        amount?: number;
+        amount_owing?: number;
+        hasPaid: boolean;
+      }>;
+      paidStudents: Array<{
+        paidBy: string;
+        amount?: number;
+        amount_owing?: number;
+        hasPaid: boolean;
+      }>;
+      absentStudents: Array<{
+        paidBy: string;
+        amount?: number;
+        amount_owing?: number;
+        hasPaid: boolean;
+      }>;
+      submittedBy: number;
+    },
+    termId?: number
+  ) => {
     const {
       classId,
       date,
@@ -444,6 +454,7 @@ export const recordService = {
           submitedBy: submittedBy,
           owingBefore: currentOwing,
           owingAfter: currentOwing, // Initially the same as owingBefore
+          termId: termId,
         },
         create: {
           classId: Number.parseInt(classId.toString()),
@@ -456,6 +467,7 @@ export const recordService = {
           settingsAmount: settingsAmount,
           owingBefore: currentOwing,
           owingAfter: currentOwing, // Initially the same as owingBefore
+          termId: termId,
         },
       });
 
@@ -485,7 +497,7 @@ export const recordService = {
     statusData: {
       hasPaid: boolean;
       isAbsent: boolean;
-      paymentAmount?: number; // Optional payment amount for partial payments
+      paymentAmount?: number; // Optional
     }
   ) => {
     const { hasPaid, isAbsent, paymentAmount } = statusData;
@@ -567,7 +579,8 @@ export const recordService = {
       isAbsent: boolean;
       submitedBy?: number;
       date?: string;
-    }>
+    }>,
+    termId?: number
   ) => {
     const updatedRecords: Array<
       Prisma.RecordGetPayload<{
@@ -630,11 +643,11 @@ export const recordService = {
           data: {
             hasPaid,
             isAbsent,
-            amount: amountPaid,
             submitedBy: submitedBy || currentRecord.submitedBy,
             submitedAt: date ? new Date(date) : currentRecord.submitedAt,
             owingBefore: currentOwing,
             owingAfter: currentOwing, // Initially the same as owingBefore
+            termId: termId ?? currentRecord.termId,
           },
         });
 

@@ -1,6 +1,9 @@
 import { AnalyticsCard } from "@/components/shared/cards/analytic-cards";
 import { CardsSkeleton } from "@/components/shared/page-loader/loaders";
-import { useAdminDashboardAnalytics } from "@/services/api/queries";
+import {
+  useAdminDashboardAnalytics,
+  useAllTermsAnalytics,
+} from "@/services/api/queries";
 import {
   BookOpen,
   CurrencyIcon,
@@ -10,15 +13,79 @@ import {
   Wallet,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+
+interface TermAnalytics {
+  term: {
+    id: number;
+    name: string;
+    year: number;
+    isActive: boolean;
+  };
+}
 
 export default function AdminHome() {
-  const { data: analytics, isLoading, error } = useAdminDashboardAnalytics();
+  // Fetch all terms for the dropdown
+  const { data: allTermsRaw, isLoading: loadingTerms } = useAllTermsAnalytics();
+  // Always treat allTerms as an array for type safety
+  const allTerms: TermAnalytics[] = React.useMemo(
+    () => (Array.isArray(allTermsRaw) ? (allTermsRaw as TermAnalytics[]) : []),
+    [allTermsRaw]
+  );
+  // Track selected termId (default to active term if available)
+  const [selectedTermId, setSelectedTermId] = useState<number | undefined>(
+    () => {
+      if (allTerms.length > 0) {
+        const active = allTerms.find((t) => t.term?.isActive);
+        return active?.term?.id;
+      }
+      return undefined;
+    }
+  );
+  // Fetch analytics for selected term
+  const {
+    data: analytics,
+    isLoading,
+    error,
+  } = useAdminDashboardAnalytics(selectedTermId);
   const navigate = useNavigate();
+
+  // Update selectedTermId when allTerms loads and no term is selected
+  React.useEffect(() => {
+    if (!selectedTermId && allTerms.length > 0) {
+      const active = allTerms.find((t) => t.term?.isActive);
+      setSelectedTermId(active?.term?.id);
+    }
+  }, [allTerms, selectedTermId]);
 
   return (
     <>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <h1 className="text-2xl font-semibold py-3">Overview</h1>
+        {/* Term Selector */}
+        <div className="mb-4 flex items-center gap-2">
+          <span className="font-medium">Term:</span>
+          {loadingTerms ? (
+            <span>Loading terms...</span>
+          ) : (
+            <select
+              className="border rounded px-2 py-1"
+              value={selectedTermId || ""}
+              onChange={(e) =>
+                setSelectedTermId(
+                  e.target.value ? Number(e.target.value) : undefined
+                )
+              }
+            >
+              {allTerms.map((t) => (
+                <option key={t.term.id} value={t.term.id}>
+                  {t.term.name} {t.term.year}{" "}
+                  {t.term.isActive ? "(Active)" : ""}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         {isLoading ? (
           <CardsSkeleton count={6} />
         ) : error ? (

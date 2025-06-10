@@ -610,9 +610,12 @@ export const updateRecordsAmount = async (data: RecordsAmount) => {
 
 // Analytics
 // Fetch admin analytics
-export const fetchAdminAnalytics = async () => {
+export const fetchAdminAnalytics = async (termId?: number) => {
   try {
-    const response = await apiClient.get("/analytics/admin-dashboard");
+    const url = termId
+      ? `/analytics/admin-dashboard?termId=${termId}`
+      : "/analytics/admin-dashboard";
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching admin analytics:", error);
@@ -626,6 +629,16 @@ export const fetchTeacherAnalytics = async (classId: number) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching teacher analytics:", error);
+    throw error;
+  }
+};
+// Fetch all terms analytics
+export const fetchAllTermsAnalytics = async () => {
+  try {
+    const response = await apiClient.get("/analytics/terms");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all terms analytics:", error);
     throw error;
   }
 };

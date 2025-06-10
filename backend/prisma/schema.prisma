@@ -92,6 +92,7 @@ model Record {
   isAbsent       Boolean  @default(false)
   settingsAmount Int?     // The canteen price for this day
   classId        Int?
+  termId         Int?
   owingBefore    Int      @default(0)  // Owing amount before this record
   owingAfter     Int      @default(0)  // Owing amount after this record
   description    String?  // Optional description field for detailed information
@@ -100,6 +101,7 @@ model Record {
   teacher        User     @relation(fields: [submitedBy], references: [id], onDelete: Cascade)
   student        Student? @relation(fields: [payedBy], references: [id], onDelete: Cascade)
   class          Class?   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  term           Term?    @relation(fields: [termId], references: [id], onDelete: SetNull)
   
   // Timestamps
   createdAt      DateTime @default(now())
@@ -139,9 +141,11 @@ model Expense {
   date        DateTime  @default(now())
   description String?
   submitedBy  Int
+  termId      Int?
   
   // Relations
   reference   Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  term        Term?     @relation(fields: [termId], references: [id], onDelete: SetNull)
   
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -165,5 +169,24 @@ model Reference {
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// Term model - represents an academic term
+model Term {
+  id          Int       @id @default(autoincrement())
+  name        String    // "First Term", "Second Term", etc.
+  year        Int       // e.g. 2025
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean   @default(false)
+
+  // Relations
+  records     Record[]     // Records submitted within the term
+  expenses    Expense[]    // Expenses made within the term
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([isActive])
 }
 

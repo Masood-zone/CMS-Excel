@@ -14,13 +14,16 @@ export const expenseService = {
     return expense;
   },
 
-  createExpense: async (expenseData: {
-    references: { id: number };
-    amount: string | number;
-    date?: string;
-    description?: string;
-    submittedBy: number;
-  }) => {
+  createExpense: async (
+    expenseData: {
+      references: { id: number };
+      amount: string | number;
+      date?: string;
+      description?: string;
+      submittedBy: number;
+    },
+    termId?: number
+  ) => {
     const { references, amount, date, description, submittedBy } = expenseData;
     const amountData =
       typeof amount === "string" ? Number.parseFloat(amount) : amount;
@@ -29,17 +32,20 @@ export const expenseService = {
       throw new ApiError(400, "Invalid amount: must be a number");
     }
 
-    return expenseRepository.create({
-      amount: amountData,
-      date: date ? new Date(date) : new Date(),
-      description,
-      submitedBy: submittedBy,
-      reference: {
-        connect: {
-          id: references.id,
+    return expenseRepository.create(
+      {
+        amount: amountData,
+        date: date ? new Date(date) : new Date(),
+        description,
+        submitedBy: submittedBy,
+        reference: {
+          connect: {
+            id: references.id,
+          },
         },
       },
-    });
+      termId
+    );
   },
 
   updateExpense: async (

@@ -1,6 +1,7 @@
 import express from "express";
 import { expenseController } from "../controllers/expense-controller";
 import { authenticate } from "../../middlewares/authenticate";
+import { requireActiveTerm } from "../controllers/term-controller";
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ router.use(authenticate);
 // Expense routes
 router.get("/", expenseController.getAllExpenses);
 router.get("/:id", expenseController.getExpenseById);
-router.post("/", expenseController.createExpense);
+router.post("/", requireActiveTerm, expenseController.createExpense);
 router.put("/:id", expenseController.updateExpense);
 router.delete("/:id", expenseController.deleteExpense);
 
