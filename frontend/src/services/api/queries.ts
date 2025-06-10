@@ -49,6 +49,14 @@ import {
   fetchDashboardSummary,
   fetchClassPrepaymentStatus,
   fetchAllTermsAnalytics,
+  fetchTerms,
+  fetchActiveTerm,
+  createTerm,
+  updateTerm,
+  activateTerm,
+  deleteTerm,
+  checkRecordsExistForDate,
+  checkRecordsSubmittedForDate,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -57,26 +65,28 @@ import { useNavigate } from "react-router-dom";
 /**
  * Query: Fetch all records.
  */
-export const useFetchRecords = () => {
+export const useFetchRecords = (termId?: number) => {
   return useQuery({
-    queryKey: ["records"],
-    queryFn: fetchRecords,
+    queryKey: ["records", termId],
+    queryFn: () => fetchRecords(termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch records.");
     },
   });
 };
-export const useFetchDashboardSummary = () => {
+
+export const useFetchDashboardSummary = (termId?: number) => {
   return useQuery({
-    queryKey: ["dashboardSummary"],
-    queryFn: fetchDashboardSummary,
+    queryKey: ["dashboardSummary", termId],
+    queryFn: () => fetchDashboardSummary(termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch records.");
     },
   });
 };
+
 /**
  * Query: Fetch records amount.
  */
@@ -90,6 +100,7 @@ export const useFetchRecordsAmount = () => {
     },
   });
 };
+
 /**
  * Query: Fetch all admins.
  */
@@ -103,6 +114,7 @@ export const useFetchAdmins = () => {
     },
   });
 };
+
 /**
  * Query: Fetch Admin
  */
@@ -116,6 +128,7 @@ export const useFetchAdmin = (id: number) => {
     },
   });
 };
+
 /**
  * Query: Fetch all teachers.
  */
@@ -129,6 +142,7 @@ export const useFetchTeachers = () => {
     },
   });
 };
+
 /**
  * Query: Fetch teacher
  */
@@ -142,6 +156,7 @@ export const useFetchTeacher = (id: number) => {
     },
   });
 };
+
 /**
  * Query: Fetch all classes.
  */
@@ -169,6 +184,7 @@ export const useFetchStudents = () => {
     },
   });
 };
+
 /**
  * Query: Fetch all students of a class.
  */
@@ -214,10 +230,10 @@ export const useFetchStudent = (id: number) => {
 /**
  * Query: Fetch all expenses.
  */
-export const useFetchExpenses = () => {
+export const useFetchExpenses = (termId?: number) => {
   return useQuery({
-    queryKey: ["expenses"],
-    queryFn: fetchExpenses,
+    queryKey: ["expenses", termId],
+    queryFn: () => fetchExpenses(termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch expenses.");
@@ -238,6 +254,7 @@ export const useFetchReferences = () => {
     },
   });
 };
+
 /**
  * Query: Fetch reference by id.
  */
@@ -265,12 +282,12 @@ export const useFetchExpense = (id: number) => {
     },
   });
 };
+
 /**
  * Mutation: Create a new reference
  */
 export const useCreateReference = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   return useMutation({
     mutationFn: (data: Reference) => createReference(data),
     onSuccess: () => {
@@ -278,7 +295,6 @@ export const useCreateReference = () => {
         queryKey: ["references"],
       });
       toast.success("Reference created successfully!");
-      navigate("/admin/expenses");
     },
     onError: (error) => {
       console.error(error);
@@ -312,7 +328,7 @@ export const useUpdateReference = () => {
  */
 export const useCreateExpense = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  // const navigate = useNavigate()
   return useMutation({
     mutationFn: (data: Expense) => createExpense(data),
     onSuccess: () => {
@@ -320,7 +336,6 @@ export const useCreateExpense = () => {
         queryKey: ["expenses"],
       });
       toast.success("Expense created successfully!");
-      navigate("/admin/expenses");
     },
     onError: (error) => {
       console.error(error);
@@ -334,7 +349,7 @@ export const useCreateExpense = () => {
  */
 export const useUpdateExpense = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  // const navigate = useNavigate()
   return useMutation({
     mutationFn: (data: Expense) => updateExpense(data),
     onSuccess: () => {
@@ -342,7 +357,6 @@ export const useUpdateExpense = () => {
         queryKey: ["expenses"],
       });
       toast.success("Expense updated successfully!");
-      navigate("/admin/expenses");
     },
     onError: (error) => {
       console.error(error);
@@ -405,6 +419,7 @@ export const useCreateAdmin = () => {
     },
   });
 };
+
 /**
  * Mutation: Update a teacher.
  */
@@ -533,26 +548,28 @@ export const useResetTeacherPassword = () => {
 /*
  * Query: Fetch all owing students
  */
-export const useFetchAllOwingStudents = () => {
+export const useFetchAllOwingStudents = (termId?: number) => {
   return useQuery({
-    queryKey: ["owingStudents"],
-    queryFn: () => fetchAllOwingStudents(),
+    queryKey: ["owingStudents", termId],
+    queryFn: () => fetchAllOwingStudents(termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch owing students.");
     },
   });
 };
+
 /*
  * Query: Fetch a teacher record detail
  */
-export const useFetchTeacherRecordsDetail = (date: Date) => {
+export const useFetchTeacherRecordsDetail = (date: Date, termId?: number) => {
   return useQuery({
-    queryKey: ["teacherRecordsDetail", date],
+    queryKey: ["teacherRecordsDetail", date, termId],
     queryFn: async () => {
       const response = await apiClient.get(`/records/teachers`, {
         params: {
           date: date.toISOString(),
+          termId,
         },
       });
       return response.data;
@@ -570,8 +587,8 @@ export const useFetchTeacherRecordsDetail = (date: Date) => {
 export const useGenerateStudentRecords = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { classId: number; date: string }) =>
-      generateRecordForADate(data.classId, data.date),
+    mutationFn: (data: { classId: number; date: string; termId?: number }) =>
+      generateRecordForADate(data.classId, data.date, data.termId),
     onSuccess: () => {
       toast.success(`Records generated successfully!`);
       queryClient.invalidateQueries({
@@ -615,6 +632,7 @@ export const useCreateClass = () => {
     },
   });
 };
+
 /**
  * Mutation: Update a class.
  */
@@ -662,6 +680,7 @@ export const useCreateStudent = () => {
     },
   });
 };
+
 /**
  * Mutation: Update a student.
  */
@@ -691,11 +710,12 @@ export const useUpdateStudent = () => {
  */
 export const useFetchRecordsByClassAndDate = (
   classId: number,
-  date: string
+  date: string,
+  termId?: number
 ) => {
   return useQuery({
-    queryKey: ["records", classId, date],
-    queryFn: () => fetchRecordsByClassAndDate(classId, date),
+    queryKey: ["records", classId, date, termId],
+    queryFn: () => fetchRecordsByClassAndDate(classId, date, termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch records.");
@@ -725,6 +745,7 @@ export const useCreateRecordsAmount = () => {
     },
   });
 };
+
 /**
  * Mutation: Update settings amount.
  */
@@ -753,11 +774,12 @@ export const useUpdateRecordsAmount = () => {
  */
 export const useStudentRecordsByClassAndDate = (
   classId: number,
-  date: string
+  date: string,
+  termId?: number
 ) => {
   return useQuery({
-    queryKey: ["studentRecords", classId, date],
-    queryFn: () => getStudentRecordsByClassAndDate(classId, date),
+    queryKey: ["studentRecords", classId, date, termId],
+    queryFn: () => getStudentRecordsByClassAndDate(classId, date, termId),
     enabled: !!classId && !!date,
     onError: (error) => {
       console.error(error);
@@ -769,10 +791,13 @@ export const useStudentRecordsByClassAndDate = (
 /**
  * Query: Fetch students in teacher's class
  */
-export const useFetchTeacherClassStudents = (teacherId: number) => {
+export const useFetchTeacherClassStudents = (
+  teacherId: number,
+  termId?: number
+) => {
   return useQuery({
-    queryKey: ["teacherClassStudents", teacherId],
-    queryFn: () => fetchTeacherClassStudents(teacherId),
+    queryKey: ["teacherClassStudents", teacherId, termId],
+    queryFn: () => fetchTeacherClassStudents(teacherId, termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch students in class.");
@@ -783,10 +808,13 @@ export const useFetchTeacherClassStudents = (teacherId: number) => {
 /**
  * Query: Fetch student owing details
  */
-export const useFetchStudentOwingDetails = (studentId: number) => {
+export const useFetchStudentOwingDetails = (
+  studentId: number,
+  termId?: number
+) => {
   return useQuery({
-    queryKey: ["studentOwingDetails", studentId],
-    queryFn: () => fetchStudentOwingDetails(studentId),
+    queryKey: ["studentOwingDetails", studentId, termId],
+    queryFn: () => fetchStudentOwingDetails(studentId, termId),
     enabled: !!studentId,
     onError: (error) => {
       console.error(error);
@@ -798,10 +826,13 @@ export const useFetchStudentOwingDetails = (studentId: number) => {
 /**
  * Query: Fetch owing students in teacher's class
  */
-export const useFetchTeacherOwingStudents = (teacherId: number) => {
+export const useFetchTeacherOwingStudents = (
+  teacherId: number,
+  termId?: number
+) => {
   return useQuery({
-    queryKey: ["teacherOwingStudents", teacherId],
-    queryFn: () => fetchTeacherOwingStudents(teacherId),
+    queryKey: ["teacherOwingStudents", teacherId, termId],
+    queryFn: () => fetchTeacherOwingStudents(teacherId, termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch owing students.");
@@ -818,10 +849,12 @@ export const usePayStudentOwing = () => {
     mutationFn: ({
       studentId,
       amount,
+      termId,
     }: {
       studentId: number;
       amount: number;
-    }) => payStudentOwing(studentId, amount),
+      termId?: number;
+    }) => payStudentOwing(studentId, amount, termId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["teacherOwingStudents"],
@@ -865,10 +898,14 @@ export const useSubmitTeacherRecord = () => {
 /**
  * Query: Get all records of absent students by class and date.
  */
-export const useTeacherSubmittedRecords = (teacherId: number, date: string) => {
+export const useTeacherSubmittedRecords = (
+  teacherId: number,
+  date: string,
+  termId?: number
+) => {
   return useQuery({
-    queryKey: ["submittedRecords", teacherId, date],
-    queryFn: () => getTeacherSubmittedRecords(teacherId, date),
+    queryKey: ["submittedRecords", teacherId, date, termId],
+    queryFn: () => getTeacherSubmittedRecords(teacherId, date, termId),
     enabled: !!teacherId && !!date,
     onError: (error) => {
       console.error(error);
@@ -876,10 +913,11 @@ export const useTeacherSubmittedRecords = (teacherId: number, date: string) => {
     },
   });
 };
-export const useTeacherRecords = (date: string) => {
+
+export const useTeacherRecords = (date: string, termId?: number) => {
   return useQuery({
-    queryKey: ["teacherRecords", date],
-    queryFn: () => getTeacherRecords(date),
+    queryKey: ["teacherRecords", date, termId],
+    queryFn: () => getTeacherRecords(date, termId),
     enabled: !!date,
     onError: (error) => {
       console.error(error);
@@ -891,15 +929,24 @@ export const useTeacherRecords = (date: string) => {
 /**
  * Query: Fetch owing students by class
  */
-export const useFetchOwingStudentsByClass = (classId?: number) => {
+export const useFetchOwingStudentsByClass = (
+  classId?: number,
+  termId?: number
+) => {
   return useQuery({
-    queryKey: ["owingStudentsByClass", classId],
+    queryKey: ["owingStudentsByClass", classId, termId],
     queryFn: () =>
       classId
         ? apiClient
-            .get(`/students/class/${classId}/owing`)
+            .get(
+              `/students/class/${classId}/owing${
+                termId ? `?termId=${termId}` : ""
+              }`
+            )
             .then((res) => res.data)
-        : apiClient.get("/admins/owing-students").then((res) => res.data),
+        : apiClient
+            .get(`/admins/owing-students${termId ? `?termId=${termId}` : ""}`)
+            .then((res) => res.data),
     enabled: classId !== undefined,
     onError: (error) => {
       console.error(error);
@@ -966,7 +1013,7 @@ export const useAdminDashboardAnalytics = (termId?: number) => {
 export const useTeacherAnalytics = (classId: number, termId?: number) => {
   return useQuery({
     queryKey: ["teacherAnalytics", classId, termId],
-    queryFn: () => fetchTeacherAnalytics(classId),
+    queryFn: () => fetchTeacherAnalytics(classId, termId),
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch teacher analytics.");
@@ -1014,18 +1061,13 @@ export const useDeleteResource = (resource: string, queryKey: string) => {
   });
 };
 
-// Add these new query functions at the end of the file
-
 /**
  * Query: Fetch all terms
  */
 export const useTerms = () => {
   return useQuery({
     queryKey: ["terms"],
-    queryFn: async () => {
-      const response = await apiClient.get("/terms");
-      return response.data;
-    },
+    queryFn: fetchTerms,
     onError: (error) => {
       console.error(error);
       toast.error("Failed to fetch terms.");
@@ -1039,10 +1081,7 @@ export const useTerms = () => {
 export const useActiveTerm = () => {
   return useQuery({
     queryKey: ["activeTerm"],
-    queryFn: async () => {
-      const response = await apiClient.get("/terms/active");
-      return response.data;
-    },
+    queryFn: fetchActiveTerm,
     onError: (error) => {
       console.error(error);
       // Don't show error toast for this as it's expected when no active term exists
@@ -1056,20 +1095,12 @@ export const useActiveTerm = () => {
 export const useCreateTerm = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: {
-      name: string;
-      year: number;
-      startDate: string;
-      endDate: string;
-      isActive: boolean;
-    }) => {
-      const response = await apiClient.post("/terms", data);
-      return response.data;
-    },
+    mutationFn: createTerm,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["terms"] });
       queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
       queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+      toast.success("Term created successfully!");
     },
     onError: (error) => {
       console.error(error);
@@ -1084,20 +1115,12 @@ export const useCreateTerm = () => {
 export const useUpdateTerm = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: {
-      id: number;
-      name: string;
-      year: number;
-      startDate: string;
-      endDate: string;
-    }) => {
-      const response = await apiClient.put(`/terms/${data.id}`, data);
-      return response.data;
-    },
+    mutationFn: updateTerm,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["terms"] });
       queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
       queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+      toast.success("Term updated successfully!");
     },
     onError: (error) => {
       console.error(error);
@@ -1112,14 +1135,12 @@ export const useUpdateTerm = () => {
 export const useActivateTerm = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (termId: number) => {
-      const response = await apiClient.patch(`/terms/${termId}/activate`);
-      return response.data;
-    },
+    mutationFn: activateTerm,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["terms"] });
       queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
       queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+      toast.success("Term activated successfully!");
     },
     onError: (error) => {
       console.error(error);
@@ -1134,18 +1155,54 @@ export const useActivateTerm = () => {
 export const useDeleteTerm = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (termId: number) => {
-      const response = await apiClient.delete(`/terms/${termId}`);
-      return response.data;
-    },
+    mutationFn: deleteTerm,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["terms"] });
       queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
       queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+      toast.success("Term deleted successfully!");
     },
     onError: (error) => {
       console.error(error);
       toast.error("Failed to delete term.");
+    },
+  });
+};
+
+/**
+ * Query: Check if records exist for a date
+ */
+export const useCheckRecordsExistForDate = (
+  classId: number,
+  date: string,
+  termId?: number
+) => {
+  return useQuery({
+    queryKey: ["recordsExist", classId, date, termId],
+    queryFn: () => checkRecordsExistForDate(classId, date, termId),
+    enabled: !!classId && !!date,
+    onError: (error) => {
+      console.error(error);
+      // Don't show error toast as this is just a check
+    },
+  });
+};
+
+/**
+ * Query: Check if records are submitted for a date
+ */
+export const useCheckRecordsSubmittedForDate = (
+  classId: number,
+  date: string,
+  termId?: number
+) => {
+  return useQuery({
+    queryKey: ["recordsSubmitted", classId, date, termId],
+    queryFn: () => checkRecordsSubmittedForDate(classId, date, termId),
+    enabled: !!classId && !!date,
+    onError: (error) => {
+      console.error(error);
+      // Don't show error toast as this is just a check
     },
   });
 };

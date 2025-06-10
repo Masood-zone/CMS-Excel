@@ -1,48 +1,44 @@
 "use client";
 
-import { AlertTriangle, Settings } from "lucide-react";
+import { useActiveTerm } from "@/services/api/queries";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useTerms } from "@/services/api/queries";
-import { Term } from "@/pages/admin/settings/terms/terms";
 
 interface TermWarningProps {
-  showNavigateButton?: boolean;
   className?: string;
+  showNavigateButton?: boolean;
 }
 
 export function TermWarning({
-  showNavigateButton = true,
   className,
+  showNavigateButton = true,
 }: TermWarningProps) {
+  const { data: activeTerm, isLoading } = useActiveTerm();
   const navigate = useNavigate();
-  const { data: terms } = useTerms();
 
-  const activeTerm = terms?.find((term: Term) => term.isActive);
+  if (isLoading) return null;
 
-  if (activeTerm) {
-    return null; // Don't show warning if there's an active term
-  }
+  if (activeTerm) return null;
 
   return (
     <Alert variant="destructive" className={className}>
-      <AlertTriangle className="h-4 w-4" />
+      <AlertCircle className="h-4 w-4" />
       <AlertTitle>No Active Term</AlertTitle>
-      <AlertDescription className="flex items-center justify-between">
-        <span>
-          No academic term is currently active. Record and expense submissions
-          are disabled.
-        </span>
+      <AlertDescription className="flex flex-col gap-2">
+        <p>
+          There is no active term set. Some features may be limited or
+          unavailable.
+        </p>
         {showNavigateButton && (
           <Button
             variant="outline"
             size="sm"
+            className="w-fit"
             onClick={() => navigate("/admin/settings/terms")}
-            className="ml-4"
           >
-            <Settings className="mr-2 h-4 w-4" />
-            Manage Terms
+            Go to Term Management
           </Button>
         )}
       </AlertDescription>

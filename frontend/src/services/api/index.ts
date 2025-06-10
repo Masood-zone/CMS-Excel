@@ -15,24 +15,30 @@ interface PrepaymentStatus {
 /**
  * Fetch all records.
  */
-export const fetchRecords = async () => {
+export const fetchRecords = async (termId?: number) => {
   try {
-    const response = await apiClient.get("/records");
+    const url = termId ? `/records?termId=${termId}` : "/records";
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching records:", error);
     throw error;
   }
 };
-export const fetchDashboardSummary = async () => {
+
+export const fetchDashboardSummary = async (termId?: number) => {
   try {
-    const response = await apiClient.get("/records/dashboard-summary");
+    const url = termId
+      ? `/records/dashboard-summary?termId=${termId}`
+      : "/records/dashboard-summary";
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching records:", error);
     throw error;
   }
 };
+
 /**
  * Fetch canteen amount.
  */
@@ -278,9 +284,12 @@ export const fetchStudents = async () => {
 /**
  * Fetch all owing students
  */
-export const fetchAllOwingStudents = async () => {
+export const fetchAllOwingStudents = async (termId?: number) => {
   try {
-    const response = await apiClient.get("/admins/owing-students");
+    const url = termId
+      ? `/admins/owing-students?termId=${termId}`
+      : "/admins/owing-students";
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching owing students:", error);
@@ -303,9 +312,10 @@ export const fetchStudentsInClass = async (id: number) => {
 /**
  * Fetch all expenses.
  */
-export const fetchExpenses = async () => {
+export const fetchExpenses = async (termId?: number) => {
   try {
-    const response = await apiClient.get("/expenses");
+    const url = termId ? `/expenses?termId=${termId}` : "/expenses";
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching expenses:", error);
@@ -407,10 +417,15 @@ export const createStudent = async (data: Student) => {
  */
 export const fetchRecordsByClassAndDate = async (
   classId: number,
-  date: string
+  date: string,
+  termId?: number
 ) => {
   try {
-    const response = await apiClient.get(`/records/${classId}?date=${date}`);
+    let url = `/records/${classId}?date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching records:", error);
@@ -423,23 +438,32 @@ export const fetchRecordsByClassAndDate = async (
  */
 export const getTeacherSubmittedRecords = async (
   teacherId: number,
-  date: string
+  date: string,
+  termId?: number
 ) => {
   try {
-    const response = await apiClient.get(
-      `/records/teacher/${teacherId}?date=${date}`
-    );
+    let url = `/records/teacher/${teacherId}?date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching teacher submitted records:", error);
     throw error;
   }
 };
-export const getTeacherRecords = async (dateFormat: string) => {
+
+export const getTeacherRecords = async (
+  dateFormat: string,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.get(
-      `/records/teachers?date=${dateFormat}`
-    );
+    let url = `/records/teachers?date=${dateFormat}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching teacher records:", error);
@@ -450,10 +474,15 @@ export const getTeacherRecords = async (dateFormat: string) => {
 //Query: Get students records by class and date
 export const getStudentRecordsByClassAndDate = async (
   classId: number,
-  date: string
+  date: string,
+  termId?: number
 ) => {
   try {
-    const response = await apiClient.get(`/records/${classId}?date=${date}`);
+    let url = `/records/${classId}?date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching student records:", error);
@@ -464,11 +493,16 @@ export const getStudentRecordsByClassAndDate = async (
 /**
  * Fetch owing students in teacher's class
  */
-export const fetchTeacherOwingStudents = async (teacherId: number) => {
+export const fetchTeacherOwingStudents = async (
+  teacherId: number,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.get(
-      `/teachers/${teacherId}/owing-students`
-    );
+    let url = `/teachers/${teacherId}/owing-students`;
+    if (termId) {
+      url += `?termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching owing students:", error);
@@ -479,19 +513,17 @@ export const fetchTeacherOwingStudents = async (teacherId: number) => {
 /**
  * Fetch students in teacher's class
  */
-export const fetchTeacherClassStudents = async (teacherId: number) => {
+export const fetchTeacherClassStudents = async (
+  teacherId: number,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.get(
-      `/teachers/${teacherId}/owing-students`
-    );
+    let url = `/teachers/${teacherId}/owing-students`;
+    if (termId) {
+      url += `?termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data.owingStudents;
-    // if (classData && classData.id) {
-    //   const studentsResponse = await apiClient.get(
-    //     `/students/class/${classData.id}`
-    //   );
-    //   return studentsResponse.data;
-    // }
-    // return [];
   } catch (error) {
     console.error("Error fetching students in teacher's class:", error);
     throw error;
@@ -501,9 +533,16 @@ export const fetchTeacherClassStudents = async (teacherId: number) => {
 /**
  * Fetch student owing details
  */
-export const fetchStudentOwingDetails = async (studentId: number) => {
+export const fetchStudentOwingDetails = async (
+  studentId: number,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.get(`/students/${studentId}/owing`);
+    let url = `/students/${studentId}/owing`;
+    if (termId) {
+      url += `?termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching student owing details:", error);
@@ -514,11 +553,17 @@ export const fetchStudentOwingDetails = async (studentId: number) => {
 /**
  * Pay student owing
  */
-export const payStudentOwing = async (studentId: number, amount: number) => {
+export const payStudentOwing = async (
+  studentId: number,
+  amount: number,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.post(`/students/${studentId}/pay`, {
-      amount,
-    });
+    const payload = termId ? { amount, termId } : { amount };
+    const response = await apiClient.post(
+      `/students/${studentId}/pay`,
+      payload
+    );
     return response.data;
   } catch (error) {
     console.error("Error paying student owing:", error);
@@ -527,16 +572,22 @@ export const payStudentOwing = async (studentId: number, amount: number) => {
 };
 
 //Mutation: Generate records for students based on classID and date
-export const generateRecordForADate = async (classId: number, date: string) => {
+export const generateRecordForADate = async (
+  classId: number,
+  date: string,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.post(
-      `/records/generate-daily?date=${date}`,
-      {
-        params: {
-          classId,
-        },
-      }
-    );
+    let url = `/records/generate-daily?date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+
+    const response = await apiClient.post(url, {
+      params: {
+        classId,
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("Error generating records:", error);
@@ -623,9 +674,16 @@ export const fetchAdminAnalytics = async (termId?: number) => {
   }
 };
 // Fetch teacher analytics
-export const fetchTeacherAnalytics = async (classId: number) => {
+export const fetchTeacherAnalytics = async (
+  classId: number,
+  termId?: number
+) => {
   try {
-    const response = await apiClient.get(`/analytics/teachers/${classId}`);
+    let url = `/analytics/teachers/${classId}`;
+    if (termId) {
+      url += `?termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
     return response.data;
   } catch (error) {
     console.error("Error fetching teacher analytics:", error);
@@ -639,6 +697,123 @@ export const fetchAllTermsAnalytics = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching all terms analytics:", error);
+    throw error;
+  }
+};
+
+// Fetch terms
+export const fetchTerms = async () => {
+  try {
+    const response = await apiClient.get("/terms");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching terms:", error);
+    throw error;
+  }
+};
+
+// Fetch active term
+export const fetchActiveTerm = async () => {
+  try {
+    const response = await apiClient.get("/terms/active");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching active term:", error);
+    return null;
+  }
+};
+
+// Create term
+export const createTerm = async (data: {
+  name: string;
+  year: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}) => {
+  try {
+    const response = await apiClient.post("/terms", data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating term:", error);
+    throw error;
+  }
+};
+
+// Update term
+export const updateTerm = async (data: {
+  id: number;
+  name: string;
+  year: number;
+  startDate: string;
+  endDate: string;
+  isActive?: boolean;
+}) => {
+  try {
+    const response = await apiClient.put(`/terms/${data.id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating term:", error);
+    throw error;
+  }
+};
+
+// Activate term
+export const activateTerm = async (termId: number) => {
+  try {
+    const response = await apiClient.patch(`/terms/${termId}/activate`);
+    return response.data;
+  } catch (error) {
+    console.error("Error activating term:", error);
+    throw error;
+  }
+};
+
+// Delete term
+export const deleteTerm = async (termId: number) => {
+  try {
+    const response = await apiClient.delete(`/terms/${termId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting term:", error);
+    throw error;
+  }
+};
+
+// Check if records exist for a date
+export const checkRecordsExistForDate = async (
+  classId: number,
+  date: string,
+  termId?: number
+) => {
+  try {
+    let url = `/records/check?classId=${classId}&date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  } catch (error) {
+    console.error("Error checking records for date:", error);
+    throw error;
+  }
+};
+
+// Check if records are submitted for a date
+export const checkRecordsSubmittedForDate = async (
+  classId: number,
+  date: string,
+  termId?: number
+) => {
+  try {
+    let url = `/records/check-submitted?classId=${classId}&date=${date}`;
+    if (termId) {
+      url += `&termId=${termId}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  } catch (error) {
+    console.error("Error checking submitted records for date:", error);
     throw error;
   }
 };
