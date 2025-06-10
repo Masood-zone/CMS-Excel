@@ -155,6 +155,16 @@ const rootRoutes = createBrowserRouter(
               return { Component: Profile };
             }}
           />
+          {/* Terms */}
+          <Route
+            path="terms"
+            lazy={async () => {
+              const { default: Terms } = await import(
+                "@/pages/admin/settings/terms/terms.tsx"
+              );
+              return { Component: Terms };
+            }}
+          />
           {/* Canteen */}
           <Route
             path="canteen"

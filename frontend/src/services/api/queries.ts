@@ -972,8 +972,7 @@ export const useTeacherAnalytics = (classId: number, termId?: number) => {
       toast.error("Failed to fetch teacher analytics.");
     },
   });
-}
-
+};
 
 /**
  * Query: All Terms Analytics
@@ -1011,6 +1010,142 @@ export const useDeleteResource = (resource: string, queryKey: string) => {
     onError: (error, id) => {
       console.error(error);
       toast.error(`Failed to delete ${resource} with ID ${id}.`);
+    },
+  });
+};
+
+// Add these new query functions at the end of the file
+
+/**
+ * Query: Fetch all terms
+ */
+export const useTerms = () => {
+  return useQuery({
+    queryKey: ["terms"],
+    queryFn: async () => {
+      const response = await apiClient.get("/terms");
+      return response.data;
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to fetch terms.");
+    },
+  });
+};
+
+/**
+ * Query: Fetch active term
+ */
+export const useActiveTerm = () => {
+  return useQuery({
+    queryKey: ["activeTerm"],
+    queryFn: async () => {
+      const response = await apiClient.get("/terms/active");
+      return response.data;
+    },
+    onError: (error) => {
+      console.error(error);
+      // Don't show error toast for this as it's expected when no active term exists
+    },
+  });
+};
+
+/**
+ * Mutation: Create a new term
+ */
+export const useCreateTerm = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      name: string;
+      year: number;
+      startDate: string;
+      endDate: string;
+      isActive: boolean;
+    }) => {
+      const response = await apiClient.post("/terms", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["terms"] });
+      queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
+      queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to create term.");
+    },
+  });
+};
+
+/**
+ * Mutation: Update a term
+ */
+export const useUpdateTerm = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      id: number;
+      name: string;
+      year: number;
+      startDate: string;
+      endDate: string;
+    }) => {
+      const response = await apiClient.put(`/terms/${data.id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["terms"] });
+      queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
+      queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to update term.");
+    },
+  });
+};
+
+/**
+ * Mutation: Activate a term
+ */
+export const useActivateTerm = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (termId: number) => {
+      const response = await apiClient.patch(`/terms/${termId}/activate`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["terms"] });
+      queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
+      queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to activate term.");
+    },
+  });
+};
+
+/**
+ * Mutation: Delete a term
+ */
+export const useDeleteTerm = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (termId: number) => {
+      const response = await apiClient.delete(`/terms/${termId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["terms"] });
+      queryClient.invalidateQueries({ queryKey: ["activeTerm"] });
+      queryClient.invalidateQueries({ queryKey: ["allTermsAnalytics"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to delete term.");
     },
   });
 };

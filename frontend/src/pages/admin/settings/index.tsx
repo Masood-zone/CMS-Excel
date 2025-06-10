@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import { Settings, User, Coffee } from "lucide-react";
+import { Settings, User, Coffee, Calendar } from "lucide-react";
 import { SettingsSidebar } from "@/components/sidebar/settings-sidebar";
 
 const settingsPages = [
@@ -17,6 +17,11 @@ const settingsPages = [
     title: "Canteen",
     href: "/admin/settings/canteen",
     icon: Coffee,
+  },
+  {
+    title: "Terms",
+    href: "/admin/settings/terms",
+    icon: Calendar,
   },
 ];
 

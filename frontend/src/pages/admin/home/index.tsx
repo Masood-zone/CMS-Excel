@@ -1,3 +1,5 @@
+"use client";
+
 import { AnalyticsCard } from "@/components/shared/cards/analytic-cards";
 import { CardsSkeleton } from "@/components/shared/page-loader/loaders";
 import {
@@ -14,6 +16,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
+import { TermSelector } from "@/components/shared/term-selector";
+import { TermWarning } from "@/components/shared/term-warning";
 
 interface TermAnalytics {
   term: {
@@ -26,7 +30,7 @@ interface TermAnalytics {
 
 export default function AdminHome() {
   // Fetch all terms for the dropdown
-  const { data: allTermsRaw, isLoading: loadingTerms } = useAllTermsAnalytics();
+  const { data: allTermsRaw } = useAllTermsAnalytics();
   // Always treat allTerms as an array for type safety
   const allTerms: TermAnalytics[] = React.useMemo(
     () => (Array.isArray(allTermsRaw) ? (allTermsRaw as TermAnalytics[]) : []),
@@ -63,28 +67,13 @@ export default function AdminHome() {
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <h1 className="text-2xl font-semibold py-3">Overview</h1>
         {/* Term Selector */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="font-medium">Term:</span>
-          {loadingTerms ? (
-            <span>Loading terms...</span>
-          ) : (
-            <select
-              className="border rounded px-2 py-1"
-              value={selectedTermId || ""}
-              onChange={(e) =>
-                setSelectedTermId(
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-            >
-              {allTerms.map((t) => (
-                <option key={t.term.id} value={t.term.id}>
-                  {t.term.name} {t.term.year}{" "}
-                  {t.term.isActive ? "(Active)" : ""}
-                </option>
-              ))}
-            </select>
-          )}
+        <div className="space-y-4">
+          <TermWarning />
+          <TermSelector
+            selectedTermId={selectedTermId}
+            onTermChange={setSelectedTermId}
+            className="mb-4"
+          />
         </div>
         {isLoading ? (
           <CardsSkeleton count={6} />

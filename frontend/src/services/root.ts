@@ -11,7 +11,7 @@ const getApiBaseUrl = () => {
   }
 
   // In development, use localhost
-  return import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  return import.meta.env.VITE_API_BASE_URL || "http://localhost:3400";
 };
 
 const API_BASE_URL = getApiBaseUrl();
