@@ -22,11 +22,11 @@ export default function EditTeacher() {
       <Card className="w-full bg-transparent border-none shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Edit Teacher</h1>
+            <h1 className="text-2xl font-bold">Edit Administrator</h1>
             <GoBackButton />
           </CardTitle>
           <CardDescription>
-            Fill in the details below to edit a teacher.
+            Fill in the details below to edit the administrator.
           </CardDescription>
         </CardHeader>
         {error ? (

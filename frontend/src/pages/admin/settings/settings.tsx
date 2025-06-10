@@ -5,7 +5,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { User, Coffee } from "lucide-react";
+import { User, Coffee, Calendar } from "lucide-react";
 
 const settingsItems = [
   {
@@ -13,6 +13,12 @@ const settingsItems = [
     description: "Manage your personal information and account settings",
     href: "/admin/settings/profile",
     icon: User,
+  },
+  {
+    title: "Academic Terms",
+    description: "Manage academic terms and their settings",
+    href: "/admin/settings/terms",
+    icon: Calendar,
   },
   {
     title: "Canteen",

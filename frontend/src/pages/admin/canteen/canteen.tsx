@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, ChevronRightIcon } from "lucide-react";
@@ -20,6 +22,19 @@ import { useNavigate } from "react-router-dom";
 import { useTeacherRecords } from "@/services/api/queries";
 import { CardsSkeleton } from "@/components/shared/page-loader/loaders";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TermSelector } from "@/components/shared/term-selector";
+import { TermWarning } from "@/components/shared/term-warning";
+
+interface TeacherRecord {
+  classId: number;
+  teacher: {
+    id: number;
+    name: string;
+  };
+  paidStudents: { amount: number }[];
+  unpaidStudents: { amount: number }[];
+  absentStudents: { amount_owing: number }[];
+}
 
 export default function CanteenRecords() {
   const navigate = useNavigate();
@@ -30,6 +45,9 @@ export default function CanteenRecords() {
     isLoading,
     error,
   } = useTeacherRecords(formattedDate);
+  const [selectedTermId, setSelectedTermId] = useState<number | undefined>(
+    undefined
+  );
 
   const handleViewRecords = (teacherId: number) => {
     navigate(`/admin/canteen-records/${teacherId}/records`, {
@@ -68,30 +86,37 @@ export default function CanteenRecords() {
 
   return (
     <div className="container mx-auto p-6">
+      <TermWarning className="mb-4" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Canteen Records</h1>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[240px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(newDate) => newDate && setDate(newDate)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-4">
+          <TermSelector
+            selectedTermId={selectedTermId}
+            onTermChange={setSelectedTermId}
+          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-[240px] justify-start text-left font-normal",
+                  !date && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date ? format(date, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={(newDate) => newDate && setDate(newDate)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
       <Tabs defaultValue="submitted-records">
         <TabsList>

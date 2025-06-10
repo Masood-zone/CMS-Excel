@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUpdateTeacher } from "@/services/api/queries";
+import { useUpdateAdmin } from "@/services/api/queries";
 import { Eye, EyeClosed } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 
 export default function EditAdminForm({ adminData }: { adminData: Admin }) {
   const [showPassword, setShowPassword] = useState(false);
-  const { mutate: updateTeacher, isLoading } = useUpdateTeacher();
+  const { mutate: updateAdmin, isLoading } = useUpdateAdmin();
   const {
     register,
     setValue,
@@ -34,7 +34,7 @@ export default function EditAdminForm({ adminData }: { adminData: Admin }) {
 
   const onSubmit = async (data: Admin) => {
     try {
-      updateTeacher({
+      updateAdmin({
         ...data,
         id: adminData.id,
       });
@@ -143,8 +143,8 @@ export default function EditAdminForm({ adminData }: { adminData: Admin }) {
         <Button type="submit" className="w-full" disabled={isLoading}>
           <ButtonLoader
             isPending={isLoading}
-            fallback="Update Teacher"
-            loadingText="Updating Teacher..."
+            fallback="Update Administrator"
+            loadingText="Updating Administrator..."
           />
         </Button>
       </CardContent>
