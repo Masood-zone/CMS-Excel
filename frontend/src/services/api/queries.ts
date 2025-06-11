@@ -335,7 +335,7 @@ export const useUpdateReference = () => {
  */
 export const useCreateExpense = () => {
   const queryClient = useQueryClient();
-  // const navigate = useNavigate()
+  const navigate = useNavigate();
   return useMutation({
     mutationFn: (data: Expense) => createExpense(data),
     onSuccess: () => {
@@ -343,6 +343,7 @@ export const useCreateExpense = () => {
         queryKey: ["expenses"],
       });
       toast.success("Expense created successfully!");
+      navigate("/admin/expenses");
     },
     onError: (error) => {
       console.error(error);

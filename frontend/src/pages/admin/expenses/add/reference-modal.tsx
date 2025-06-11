@@ -26,16 +26,20 @@ export default function ReferenceModal() {
     reset,
   } = useForm<Reference>();
 
-  const { mutate: createReference, isLoading: creatingReference } =
-    useCreateReference();
+  const {
+    mutate: createReference,
+    isLoading: creatingReference,
+    isSuccess,
+  } = useCreateReference();
 
   const onSubmit: SubmitHandler<Reference> = async (data) => {
     try {
       await createReference(data);
-      setOpen(false); // Close the dialog
     } catch (error) {
       console.log(error);
     } finally {
+      if (isSuccess) setOpen(false);
+      // Reset the form after successful creation
       reset();
     }
   };

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo, useCallback } from "react";
 import { useState } from "react";
 import { format } from "date-fns";
 import {
@@ -73,6 +74,80 @@ interface TermFormData {
   startDate: Date | undefined;
   endDate: Date | undefined;
 }
+
+const TermCard = React.memo(function TermCard({
+  term,
+  onEdit,
+  onActivate,
+  onDelete,
+  activateLoading,
+}: {
+  term: Term;
+  onEdit: (term: Term) => void;
+  onActivate: (id: number) => void;
+  onDelete: (id: number) => void;
+  activateLoading: boolean;
+}) {
+  return (
+    <Card key={term.id} className={term.isActive ? "border-primary" : ""}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {term.name} {term.year}
+              {term.isActive && <Badge variant="default">Active</Badge>}
+            </CardTitle>
+            <CardDescription>
+              {format(new Date(term.startDate), "PPP")} -{" "}
+              {format(new Date(term.endDate), "PPP")}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {!term.isActive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onActivate(term.id)}
+                disabled={activateLoading}
+              >
+                Activate
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => onEdit(term)}>
+              <Edit className="h-4 w-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Term</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{term.name} {term.year}"?
+                    This action cannot be undone and will affect all associated
+                    records.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDelete(term.id)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardHeader>
+    </Card>
+  );
+});
 
 export default function TermsManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -189,7 +264,15 @@ export default function TermsManagement() {
     setIsEditDialogOpen(true);
   };
 
-  const activeTerm = terms?.find((term: Term) => term.isActive);
+  const activeTerm = useMemo(
+    () => terms?.find((term: Term) => term.isActive),
+    [terms]
+  );
+  const handleEdit = useCallback(openEditDialog, []);
+  const handleActivate = useCallback(handleActivateTerm, [
+    activateTermMutation,
+  ]);
+  const handleDelete = useCallback(handleDeleteTerm, [deleteTermMutation]);
 
   if (isLoading) {
     return (
@@ -368,67 +451,14 @@ export default function TermsManagement() {
       {/* Terms List */}
       <div className="grid gap-4">
         {terms?.map((term: Term) => (
-          <Card key={term.id} className={term.isActive ? "border-primary" : ""}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    {term.name} {term.year}
-                    {term.isActive && <Badge variant="default">Active</Badge>}
-                  </CardTitle>
-                  <CardDescription>
-                    {format(new Date(term.startDate), "PPP")} -{" "}
-                    {format(new Date(term.endDate), "PPP")}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!term.isActive && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleActivateTerm(term.id)}
-                      disabled={activateTermMutation.isLoading}
-                    >
-                      Activate
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(term)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Term</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{term.name}{" "}
-                          {term.year}"? This action cannot be undone and will
-                          affect all associated records.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteTerm(term.id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
+          <TermCard
+            key={term.id}
+            term={term}
+            onEdit={handleEdit}
+            onActivate={handleActivate}
+            onDelete={handleDelete}
+            activateLoading={activateTermMutation.isLoading}
+          />
         ))}
       </div>
 
