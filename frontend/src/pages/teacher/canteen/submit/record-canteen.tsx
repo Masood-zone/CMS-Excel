@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/authStore";
 import {
   useStudentRecordsByClassAndDate,
   useSubmitTeacherRecord,
+  useActiveTerm,
 } from "@/services/api/queries";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -18,14 +19,18 @@ import { cn } from "@/lib/utils";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function SubmitCanteenRecords() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, assigned_class } = useAuthStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [records, setRecords] = useState<CanteenRecord[]>([]);
 
   const classId = assigned_class?.id ?? 0;
+  const { data: activeTerm } = useActiveTerm();
+  const termId = activeTerm?.id;
   const formattedDate = selectedDate.toISOString().split("T")[0];
 
   const {
@@ -78,6 +83,9 @@ export default function SubmitCanteenRecords() {
 
     submitRecord(payload, {
       onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["teacherAnalytics", classId, termId],
+        });
         navigate("/teacher");
       },
     });

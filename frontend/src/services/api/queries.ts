@@ -341,6 +341,7 @@ export const useCreateExpense = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["expenses"],
+        exact: false,
       });
       toast.success("Expense created successfully!");
       navigate("/admin/expenses");
@@ -363,6 +364,7 @@ export const useUpdateExpense = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["expenses"],
+        exact: false,
       });
       toast.success("Expense updated successfully!");
     },
@@ -653,7 +655,7 @@ export const useUpdateClass = () => {
       toast.success("Class updated successfully!");
       // Invalidate the query to refresh the table
       queryClient.invalidateQueries({
-        queryKey: ["classes"],
+        queryKey: ["classes", "teachers"],
       });
       //Navigate to the classes page after updating a class
       navigate("/admin/classes");
@@ -894,6 +896,7 @@ export const useSubmitTeacherRecord = () => {
       queryClient.invalidateQueries({
         queryKey: ["teacherRecords"],
       });
+
       toast.success("Records submitted successfully.");
     },
     onError: (error) => {
