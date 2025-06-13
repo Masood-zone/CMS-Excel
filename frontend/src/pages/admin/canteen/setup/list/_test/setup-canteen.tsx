@@ -9,6 +9,7 @@ import {
   useSubmitTeacherRecord,
   useGenerateStudentRecords,
   useBulkUpdateStudentStatus,
+  useActiveTerm,
 } from "@/services/api/queries";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { ColumnDef } from "@tanstack/react-table";
 import { isAfter, isWeekend, startOfToday } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Define the Class type
 interface Class {
@@ -51,6 +53,8 @@ interface Class {
 }
 
 export default function SetupCanteen() {
+  const queryClient = useQueryClient();
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [records, setRecords] = useState<CanteenRecord[]>([]);
@@ -67,7 +71,7 @@ export default function SetupCanteen() {
   const formattedDate = selectedDate.toISOString().split("T")[0];
   const isFutureOrWeekend =
     isAfter(selectedDate, today) || isWeekend(selectedDate);
-
+  const { data: activeTerm } = useActiveTerm();
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
   const { data: studentRecords, isLoading: recordsLoading } =
     useStudentRecordsByClassAndDate(
@@ -85,6 +89,7 @@ export default function SetupCanteen() {
   const classSupervisorId = classes?.find(
     (classItem: Class) => classItem.id === Number.parseInt(selectedClassId)
   )?.supervisorId;
+  const termId = activeTerm?.id;
 
   useEffect(() => {
     if (studentRecords) {
@@ -115,6 +120,7 @@ export default function SetupCanteen() {
         date: selectedDate?.toISOString().split("T")[0] ?? "",
       };
       await updateStatus(updatedRecord);
+
       setRecords((prevRecords) =>
         prevRecords.map((r) => (r.id === record.id ? updatedRecord : r))
       );
@@ -270,7 +276,14 @@ export default function SetupCanteen() {
     };
 
     try {
-      await submitRecord(payload);
+      await submitRecord(payload, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["adminAnalytics", termId],
+          });
+        },
+      });
+
       setIsSubmitted(true);
     } catch (error) {
       console.error(error);
