@@ -6,13 +6,13 @@ const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     return (
       import.meta.env.VITE_API_BASE_URL ||
-      "http://localhost:3400"
+      "https://canteenapi.gerizimheights.org"
     );
   }
 
   // In development, use localhost
   return (
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:3400"
+    import.meta.env.VITE_API_BASE_URL || "https://canteenapi.gerizimheights.org"
   );
 };
 
