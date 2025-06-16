@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { studentService } from "./student-service";
+import { classService } from "./class-service"; // Add this import
 import { ApiError } from "../utils/api-error";
 
 interface ImportError {
@@ -15,12 +16,14 @@ interface ImportResult {
   successfulImports: number;
   errors: ImportError[];
   duplicates: string[];
+  classAssignments: { studentName: string; className: string }[];
 }
 
 interface StudentRow {
   name?: string;
   age?: string | number;
   gender?: string;
+  class?: string;
   [key: string]: any;
 }
 
@@ -28,7 +31,7 @@ export const importService = {
   async importStudentsFromExcel(
     fileBuffer: Buffer,
     filename: string,
-    classId?: number,
+    defaultClassId?: number,
     userId?: number
   ): Promise<ImportResult> {
     const result: ImportResult = {
@@ -37,6 +40,7 @@ export const importService = {
       successfulImports: 0,
       errors: [],
       duplicates: [],
+      classAssignments: [],
     };
 
     try {
@@ -67,15 +71,28 @@ export const importService = {
 
       // Validate required columns
       const requiredColumns = ["name", "age", "gender"];
-      const headerMap = this.createHeaderMap(headers, requiredColumns);
+      const optionalColumns = ["class"];
+      const headerMap = this.createHeaderMap(headers, [
+        ...requiredColumns,
+        ...optionalColumns,
+      ]);
 
-      if (Object.keys(headerMap).length < requiredColumns.length) {
+      if (
+        Object.keys(headerMap).filter((key) => requiredColumns.includes(key))
+          .length < requiredColumns.length
+      ) {
         const missingColumns = requiredColumns.filter((col) => !headerMap[col]);
         throw new ApiError(
           400,
           `Missing required columns: ${missingColumns.join(", ")}`
         );
       }
+
+      // Fetch all existing classes for validation
+      const existingClasses = await classService.getAllClasses();
+      const classMap = new Map(
+        existingClasses.map((cls) => [cls.name.toLowerCase().trim(), cls])
+      );
 
       result.totalRows = dataRows.length;
 
@@ -97,6 +114,29 @@ export const importService = {
             continue;
           }
 
+          // Handle class assignment
+          let assignedClassId = defaultClassId;
+          if (studentData.class) {
+            const normalizedClassName = studentData.class.toLowerCase().trim();
+            const matchedClass = classMap.get(normalizedClassName);
+
+            if (matchedClass) {
+              assignedClassId = matchedClass.id;
+              result.classAssignments.push({
+                studentName: studentData.name,
+                className: matchedClass.name,
+              });
+            } else {
+              result.errors.push({
+                row: rowIndex,
+                field: "class",
+                value: studentData.class,
+                message: `Class "${studentData.class}" not found. Please ensure the class exists in the system.`,
+              });
+              continue;
+            }
+          }
+
           // Check for duplicates
           const existingStudents = await studentService.getAllStudents();
           const isDuplicate = existingStudents.some(
@@ -114,7 +154,7 @@ export const importService = {
             name: studentData.name,
             age: studentData.age,
             gender: studentData.gender,
-            classId: classId,
+            classId: assignedClassId,
           });
 
           result.successfulImports++;
@@ -147,13 +187,13 @@ export const importService = {
 
   createHeaderMap(
     headers: string[],
-    requiredColumns: string[]
+    columns: string[]
   ): Record<string, number> {
     const headerMap: Record<string, number> = {};
 
     headers.forEach((header, index) => {
       const normalizedHeader = header.toString().toLowerCase().trim();
-      requiredColumns.forEach((column) => {
+      columns.forEach((column) => {
         if (
           normalizedHeader === column ||
           normalizedHeader === column.replace("_", " ") ||
@@ -175,10 +215,15 @@ export const importService = {
     name: string;
     age: number;
     gender: string;
+    class?: string;
   } {
     const name = row[headerMap.name]?.toString().trim() || "";
     const ageValue = row[headerMap.age];
     const gender = row[headerMap.gender]?.toString().toLowerCase().trim() || "";
+    const className =
+      headerMap.class !== undefined
+        ? row[headerMap.class]?.toString().trim()
+        : undefined;
 
     // Parse age
     let age: number;
@@ -190,11 +235,16 @@ export const importService = {
       throw new Error(`Invalid age value at row ${rowIndex}`);
     }
 
-    return { name, age, gender };
+    const result: any = { name, age, gender };
+    if (className) {
+      result.class = className;
+    }
+
+    return result;
   },
 
   validateStudentData(
-    data: { name: string; age: number; gender: string },
+    data: { name: string; age: number; gender: string; class?: string },
     rowIndex: number
   ): ImportError[] {
     const errors: ImportError[] = [];

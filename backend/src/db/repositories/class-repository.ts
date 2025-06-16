@@ -19,6 +19,13 @@ export const classRepository = {
     });
   },
 
+  findByName: async (name: string) => {
+    return prisma.class.findUnique({
+      where: { name },
+      include: { supervisor: true, students: true },
+    });
+  },
+
   create: async (data: Prisma.ClassCreateInput) => {
     return prisma.class.create({
       data,

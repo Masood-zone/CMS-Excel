@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.post(
-  "/students",
+  "/:id/students",
   importController.uploadMiddleware,
   importController.importStudents
 );

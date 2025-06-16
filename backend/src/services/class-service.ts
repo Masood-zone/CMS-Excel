@@ -38,6 +38,15 @@ export const classService = {
     });
   },
 
+  async getClassByName(name: string) {
+    try {
+      return await classRepository.findByName(name);
+    } catch (error) {
+      console.error("Error fetching class by name:", error);
+      throw error;
+    }
+  },
+
   updateClass: async (
     id: number,
     classData: {
