@@ -57,6 +57,7 @@ import {
   deleteTerm,
   checkRecordsExistForDate,
   checkRecordsSubmittedForDate,
+  importStudentsFromExcel,
 } from "@/services/api";
 import { apiClient } from "../root";
 import { useNavigate } from "react-router-dom";
@@ -223,6 +224,35 @@ export const useFetchStudent = (id: number) => {
     onError: (error) => {
       console.log(error);
       toast.error("Failed to fetch student.");
+    },
+  });
+};
+
+/**
+ * Mutation: Import students from Excel
+ */
+export const useImportStudents = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      file,
+      classId,
+      userId,
+    }: {
+      file: File;
+      classId?: number;
+      userId?: number;
+    }) => importStudentsFromExcel(file, classId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["students"],
+      });
+      // Don't show toast here as it's handled in the modal
+    },
+    onError: (error) => {
+      console.error(error);
+      // Error handling is done in the modal
+      throw error;
     },
   });
 };

@@ -426,6 +426,34 @@ export const createStudent = async (data: Student) => {
 };
 
 /**
+ * Import students from Excel file
+ */
+export const importStudentsFromExcel = async (
+  file: File,
+  classId?: number,
+  userId?: number
+) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (classId) {
+      formData.append("classId", classId.toString());
+    }
+    // Add userId to the URL if provided
+    const url = userId ? `/import/${userId}/students` : "/import/students";
+    const response = await apiClient.post(url, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error importing students:", error);
+    throw error;
+  }
+};
+
+/**
  * Fetch all records of a class by date.
  */
 export const fetchRecordsByClassAndDate = async (
