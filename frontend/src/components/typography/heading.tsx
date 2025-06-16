@@ -41,3 +41,7 @@ export function Header({
     </div>
   );
 }
+
+export function PageHeading({ children }: { children: React.ReactNode }) {
+  return <h1 className="text-4xl font-semibold">{children}</h1>;
+}
