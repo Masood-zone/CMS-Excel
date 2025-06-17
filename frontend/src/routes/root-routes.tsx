@@ -13,6 +13,7 @@ import AdminHome from "@/pages/admin/home/index.tsx";
 import ViewTeacher from "@/pages/admin/teachers/view/view-teacher.tsx";
 import ViewStudent from "@/pages/admin/students/view/view-student.tsx";
 import OwingStudentDetails from "@/pages/teacher/students/owings/[id]/owing-student.tsx";
+import SettingsLayout from "@/pages/teacher/settings/index.tsx";
 
 const rootRoutes = createBrowserRouter(
   createRoutesFromElements(
@@ -566,7 +567,7 @@ const rootRoutes = createBrowserRouter(
               return { Component: Canteen };
             }}
           />
-          <Route
+          {/* <Route
             path="submit"
             lazy={async () => {
               const { default: SubmitCanteenRecords } = await import(
@@ -574,8 +575,8 @@ const rootRoutes = createBrowserRouter(
               );
               return { Component: SubmitCanteenRecords };
             }}
-          />
-          <Route
+          /> */}
+          {/* <Route
             path=":id/edit"
             lazy={async () => {
               const { default: EditCanteenRecord } = await import(
@@ -583,18 +584,10 @@ const rootRoutes = createBrowserRouter(
               );
               return { Component: EditCanteenRecord };
             }}
-          />
+          /> */}
         </Route>
         {/* Settings */}
-        <Route
-          path="settings"
-          lazy={async () => {
-            const { default: SettingsLayout } = await import(
-              "@/pages/teacher/settings/index.tsx"
-            );
-            return { Component: SettingsLayout };
-          }}
-        >
+        <Route path="settings" element={<SettingsLayout />}>
           <Route
             index
             lazy={async () => {
