@@ -40,7 +40,7 @@ export default function SubmittedRecords() {
   if (error) return <div>Error fetching submitted records</div>;
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-5">
       <h1 className="text-2xl font-bold mb-4">Submitted Canteen Records</h1>
       <div className="mb-4">
         <Popover>

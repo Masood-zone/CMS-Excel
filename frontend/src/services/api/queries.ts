@@ -926,6 +926,9 @@ export const useSubmitTeacherRecord = () => {
       queryClient.invalidateQueries({
         queryKey: ["teacherRecords"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["submittedRecords"],
+      });
 
       toast.success("Records submitted successfully.");
     },
