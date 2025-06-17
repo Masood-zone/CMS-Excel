@@ -36,6 +36,10 @@ import type { ColumnDef } from "@tanstack/react-table";
 import OwingsPage from "./owings";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
+import {
+  BulkActionDialog,
+  MarkAllDialog,
+} from "@/pages/admin/canteen/setup/list/setup-canteen-alerts";
 
 // Define the CanteenRecord type
 interface CanteenRecord {
@@ -74,12 +78,10 @@ export default function Canteen() {
   const formattedDate = selectedDate.toISOString().split("T")[0];
   const { data: studentRecords, isLoading: recordsLoading } =
     useStudentRecordsByClassAndDate(classId, formattedDate);
-  const { mutate: updateStatus, isLoading: updatingLoader } =
-    useUpdateStudentStatus();
+  const { isLoading: updatingLoader } = useUpdateStudentStatus();
   const { mutate: generateRecords, isLoading: isGenerating } =
     useGenerateStudentRecords();
-  const { mutate: bulkUpdateStatus, isLoading: bulkUpdatingLoader } =
-    useBulkUpdateStudentStatus();
+  const { isLoading: bulkUpdatingLoader } = useBulkUpdateStudentStatus();
 
   useEffect(() => {
     if (studentRecords) {
@@ -92,6 +94,7 @@ export default function Canteen() {
     newStatus: { hasPaid: boolean; isAbsent: boolean }
   ) => {
     try {
+      // Only update local state, do not call updateStatus mutation
       const updatedRecord = {
         ...record,
         ...newStatus,
@@ -102,7 +105,6 @@ export default function Canteen() {
           typeof record.submitedBy === "number" ? record.submitedBy : 0,
         classId: record.classId ?? classId,
       };
-      await updateStatus(updatedRecord);
       setRecords((prevRecords) =>
         prevRecords.map((r) =>
           r.id === record.id
@@ -124,26 +126,8 @@ export default function Canteen() {
 
   const handleBulkUpdateStatus = async () => {
     if (!selectedRows.length || !bulkAction) return;
-
     try {
-      const updatedRecords = selectedRows.map((record) => ({
-        ...record,
-        hasPaid: bulkAction === "paid",
-        isAbsent: false,
-        submitedBy: teacher?.id ?? 0,
-        date: selectedDate?.toISOString().split("T")[0] ?? "",
-        amount: record.amount,
-        submitedAt: record.submitedAt,
-        payedBy: record.payedBy ? Number(record.payedBy) : null,
-        isPrepaid: record.isPrepaid,
-        settingsAmount: record.settingsAmount,
-        classId: classId,
-        student: record.student,
-      }));
-
-      await bulkUpdateStatus(updatedRecords);
-
-      // Update local state
+      // Only update local state, do not call bulkUpdateStatus mutation
       setRecords((prevRecords) =>
         prevRecords.map((record) => {
           const updatedRecord = selectedRows.find((r) => r.id === record.id);
@@ -157,7 +141,6 @@ export default function Canteen() {
           return record;
         })
       );
-
       toast.success(
         `${selectedRows.length} students marked as ${
           bulkAction === "paid" ? "paid" : "unpaid"
@@ -173,32 +156,7 @@ export default function Canteen() {
 
   const handleMarkAllStudents = async (action: "paid" | "unpaid") => {
     try {
-      // Filter out absent students for bulk update
-      const studentsToUpdate = records.filter((record) => !record.isAbsent);
-
-      if (studentsToUpdate.length === 0) {
-        toast.info("No students to update");
-        setShowMarkAllDialog(false);
-        return;
-      }
-
-      const updatedRecords = studentsToUpdate.map((record) => ({
-        ...record,
-        hasPaid: action === "paid",
-        isAbsent: false,
-        submitedBy: teacher?.id ?? 0,
-        date: selectedDate?.toISOString().split("T")[0] ?? "",
-        amount: record.amount,
-        submitedAt: record.submitedAt,
-        payedBy: record.payedBy ? Number(record.payedBy) : null,
-        isPrepaid: record.isPrepaid,
-        settingsAmount: record.settingsAmount,
-        classId: classId,
-      }));
-
-      await bulkUpdateStatus(updatedRecords);
-
-      // Update local state
+      // Only update local state, do not call bulkUpdateStatus mutation
       setRecords((prevRecords) =>
         prevRecords.map((record) => {
           if (!record.isAbsent) {
@@ -210,7 +168,6 @@ export default function Canteen() {
           return record;
         })
       );
-
       toast.success(
         `All students marked as ${action === "paid" ? "paid" : "unpaid"}`
       );
@@ -285,7 +242,14 @@ export default function Canteen() {
     {
       accessorKey: "hasPaid",
       header: "Payment Status",
-      cell: ({ row }) => (row.original.hasPaid ? "Paid" : "Unpaid"),
+      cell: ({ row }) =>
+        row.original.isAbsent ? (
+          <span className="text-yellow-600 font-semibold">Absent</span>
+        ) : row.original.hasPaid ? (
+          <span className="text-green-600 font-semibold">Paid</span>
+        ) : (
+          <span className="text-red-600 font-semibold">Unpaid</span>
+        ),
     },
     {
       id: "actions",
@@ -490,63 +454,22 @@ export default function Canteen() {
       </div>
 
       {/* Bulk action confirmation dialog */}
-      <AlertDialog
+      {/* Mark All confirmation dialog */}
+      <BulkActionDialog
         open={showBulkActionDialog}
         onOpenChange={setShowBulkActionDialog}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Bulk Action</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark {selectedRows.length} students as{" "}
-              {bulkAction === "paid" ? "paid" : "unpaid"}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkUpdateStatus}
-              className={
-                bulkAction === "paid" ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              {bulkUpdatingLoader
-                ? "Processing..."
-                : `Mark as ${bulkAction === "paid" ? "Paid" : "Unpaid"}`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Mark All confirmation dialog */}
-      <AlertDialog open={showMarkAllDialog} onOpenChange={setShowMarkAllDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Mark All</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark ALL students as{" "}
-              {markAllAction === "paid" ? "paid" : "unpaid"}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                markAllAction && handleMarkAllStudents(markAllAction)
-              }
-              className={
-                markAllAction === "paid"
-                  ? "bg-green-600 hover:bg-green-700"
-                  : ""
-              }
-            >
-              {bulkUpdatingLoader
-                ? "Processing..."
-                : `Mark All as ${markAllAction === "paid" ? "Paid" : "Unpaid"}`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        selectedRowsCount={selectedRows.length}
+        bulkAction={bulkAction}
+        onConfirm={handleBulkUpdateStatus}
+        loading={bulkUpdatingLoader}
+      />
+      <MarkAllDialog
+        open={showMarkAllDialog}
+        onOpenChange={setShowMarkAllDialog}
+        markAllAction={markAllAction}
+        onConfirm={() => markAllAction && handleMarkAllStudents(markAllAction)}
+        loading={bulkUpdatingLoader}
+      />
     </section>
   );
 }

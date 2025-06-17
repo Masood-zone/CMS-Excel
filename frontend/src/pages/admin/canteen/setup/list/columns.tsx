@@ -15,7 +15,6 @@ interface CanteenRecord {
   submitedAt: Date;
   hasPaid: boolean;
   isAbsent: boolean;
-  isSubmitted: boolean; // New property to track submission status
 }
 
 export const columns = (
@@ -88,7 +87,7 @@ export const columns = (
     cell: ({ row }) => {
       const record = row.original;
       // Disable all action buttons if any record isSubmitted (i.e., after daily submission)
-      const disableActions = updatingLoader || record.isSubmitted;
+      const disableActions = updatingLoader;
       return (
         <div className="flex space-x-2">
           <Button

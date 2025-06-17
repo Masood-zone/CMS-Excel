@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -22,35 +22,15 @@ import { CanteenTable } from "@/components/tables/canteen-table";
 import { toast } from "sonner";
 import { TableSkeleton } from "@/components/shared/page-loader/loaders";
 import { columns } from "./columns";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   useBulkUpdateStudentStatus,
   useFetchClasses,
-  useFetchClassPrepaymentStatus,
   useGenerateStudentRecords,
   useStudentRecordsByClassAndDate,
-  useSubmitTeacherRecord,
   useUpdateStudentStatus,
 } from "@/services/api/queries";
-// import { useFetchClasses } from "@/services/api/classes/classes.queries";
-// import {
-//   useBulkUpdateStudentStatus,
-//   useGenerateStudentRecords,
-//   useStudentRecordsByClassAndDate,
-//   useSubmitTeacherRecord,
-//   useUpdateStudentStatus,
-// } from "@/services/api/records/records.queries";
-// import { useFetchClassPrepaymentStatus } from "@/services/api/prepayments/prepayments.queries";
+import { BulkActionDialog, MarkAllDialog } from "./setup-canteen-alerts";
 
 // Define the Class type
 interface Class {
@@ -70,7 +50,6 @@ export default function SetupCanteen() {
   const [markAllAction, setMarkAllAction] = useState<"paid" | "unpaid" | null>(
     null
   );
-  const [isSubmittedToday, setIsSubmittedToday] = useState(false);
 
   const formattedDate = format(selectedDate, "yyyy-MM-dd");
   const { data: classes, isLoading: classesLoading } = useFetchClasses();
@@ -85,42 +64,16 @@ export default function SetupCanteen() {
     useUpdateStudentStatus();
   const { mutate: bulkUpdateStatus, isLoading: bulkUpdatingLoader } =
     useBulkUpdateStudentStatus();
-  const { mutate: submitRecord, isLoading: submittingRecord } =
-    useSubmitTeacherRecord();
+
   const classSupervisorId = classes?.find(
     (classItem: Class) => classItem.id === Number.parseInt(selectedClassId)
   )?.supervisorId;
 
-  const { data: prepaymentStatus } = useFetchClassPrepaymentStatus(
-    Number.parseInt(selectedClassId),
-    formattedDate
-  );
-
   useEffect(() => {
-    if (studentRecords && prepaymentStatus) {
-      const updatedRecords = studentRecords.map((record: CanteenRecord) => {
-        // Check if this student has an active prepayment for today
-        const hasActivePrepayment = prepaymentStatus.some(
-          (status) => status.studentId === record.payedBy
-        );
-
-        // If student has active prepayment, mark as paid and prepaid
-        if (hasActivePrepayment) {
-          return {
-            ...record,
-            hasPaid: true,
-            isPrepaid: true,
-          };
-        }
-
-        return record;
-      });
-
-      setRecords(updatedRecords);
-    } else if (studentRecords) {
+    if (studentRecords) {
       setRecords(studentRecords);
     }
-  }, [studentRecords, prepaymentStatus]);
+  }, [studentRecords]);
 
   const handleUpdateStatus = async (
     record: CanteenRecord,
@@ -244,80 +197,6 @@ export default function SetupCanteen() {
     setShowMarkAllDialog(true);
   };
 
-  // Helper to get the submission key for localStorage
-  const getSubmissionKey = (classId: string, date: string) =>
-    `canteen_submitted_${classId}_${date}`;
-
-  // Helper to check if the current class/date is submitted
-  const checkIsSubmitted = useCallback((classId: string, date: string) => {
-    if (!classId || !date) return false;
-    return localStorage.getItem(getSubmissionKey(classId, date)) === "true";
-  }, []);
-
-  // State for per-class/date submission
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  // Update isSubmitted whenever class/date changes
-  useEffect(() => {
-    setIsSubmitted(checkIsSubmitted(selectedClassId, formattedDate));
-  }, [selectedClassId, formattedDate, checkIsSubmitted]);
-
-  // When submitting, set lockout for current class/date
-  const handleSubmitCanteen = async () => {
-    if (!selectedClassId) return;
-
-    const payload = {
-      classId: Number.parseInt(selectedClassId),
-      date: formattedDate,
-      unpaidStudents: records
-        .filter((r) => !r.hasPaid && !r.isAbsent)
-        .map((r) => ({
-          id: r.id,
-          amount: r.settingsAmount,
-          paidBy: r.payedBy?.toString() || "",
-          hasPaid: false,
-          date: formattedDate,
-        })),
-      paidStudents: records
-        .filter((r) => r.hasPaid)
-        .map((r) => ({
-          id: r.id,
-          amount: r.settingsAmount,
-          paidBy: r.payedBy?.toString() || "",
-          hasPaid: true,
-          date: formattedDate,
-        })),
-      absentStudents: records
-        .filter((r) => r.isAbsent)
-        .map((r) => ({
-          id: r.id,
-          amount_owing: r.settingsAmount,
-          paidBy: r.payedBy?.toString() || "",
-          hasPaid: false,
-          date: formattedDate,
-        })),
-      submittedBy: classSupervisorId,
-    };
-
-    try {
-      await submitRecord(payload);
-      // Mark as submitted for today
-      const today = new Date().toISOString().split("T")[0];
-      localStorage.setItem("canteen_last_submitted", today);
-      localStorage.setItem(
-        getSubmissionKey(selectedClassId, formattedDate),
-        "true"
-      );
-      setIsSubmitted(true);
-      const key = getSubmissionKey(selectedClassId, formattedDate);
-      localStorage.setItem(key, "1");
-      setIsSubmittedToday(true);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to submit canteen records");
-    }
-  };
-
   const handleRowSelectionChange = (rows: CanteenRecord[]) => {
     setSelectedRows(rows);
   };
@@ -334,21 +213,10 @@ export default function SetupCanteen() {
 
   // When records are loaded, mark them as submitted if today is submitted
   useEffect(() => {
-    if (isSubmittedToday && records.length > 0) {
+    if (records.length > 0) {
       setRecords((prev) => prev.map((r) => ({ ...r, isSubmitted: true })));
     }
-  }, [isSubmittedToday, records.length]);
-
-  // Helper: get lockout key for current class/date
-  const getLockoutKey = (classId: string, date: string) =>
-    `canteen_submitted_${classId}_${date}`;
-
-  // Check lockout for selected class/date
-  useEffect(() => {
-    if (!selectedClassId) return;
-    const key = getLockoutKey(selectedClassId, formattedDate);
-    setIsSubmittedToday(!!localStorage.getItem(key));
-  }, [selectedClassId, formattedDate]);
+  }, [records.length]);
 
   // When generating records, set lockout for current class/date
   const handleGenerateRecords = async () => {
@@ -357,9 +225,6 @@ export default function SetupCanteen() {
       classId: Number.parseInt(selectedClassId),
       date: selectedDate.toISOString(),
     });
-    const key = getLockoutKey(selectedClassId, formattedDate);
-    localStorage.setItem(key, "1");
-    setIsSubmittedToday(true);
   };
 
   // Date picker: only allow today and past weekdays (no weekends, no future)
@@ -375,7 +240,6 @@ export default function SetupCanteen() {
             <Button
               onClick={() => openMarkAllDialog("paid")}
               className="bg-primary hover:bg-foreground whitespace-nowrap"
-              disabled={isSubmitted}
             >
               <CheckSquare className="h-4 w-4 mr-2" />
               Mark All as Paid
@@ -384,7 +248,6 @@ export default function SetupCanteen() {
               onClick={() => openMarkAllDialog("unpaid")}
               variant="destructive"
               className="whitespace-nowrap"
-              disabled={isSubmitted}
             >
               <XCircle className="h-4 w-4 mr-2" />
               Mark All as Unpaid
@@ -393,7 +256,7 @@ export default function SetupCanteen() {
               <>
                 <Button
                   onClick={() => openBulkActionDialog("paid")}
-                  disabled={bulkUpdatingLoader || isSubmitted}
+                  disabled={bulkUpdatingLoader}
                   className="bg-primary hover:bg-foreground whitespace-nowrap"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -401,7 +264,7 @@ export default function SetupCanteen() {
                 </Button>
                 <Button
                   onClick={() => openBulkActionDialog("unpaid")}
-                  disabled={bulkUpdatingLoader || isSubmitted}
+                  disabled={bulkUpdatingLoader}
                   variant="destructive"
                   className="whitespace-nowrap"
                 >
@@ -412,13 +275,6 @@ export default function SetupCanteen() {
             )}
           </div>
         </div>
-        <Button
-          onClick={handleSubmitCanteen}
-          disabled={!selectedClassId || submittingRecord || isSubmitted}
-          className="w-full md:w-auto"
-        >
-          {submittingRecord ? "Submitting..." : "Submit Canteen Records"}
-        </Button>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 w-full overflow-x-auto">
         <Select onValueChange={setSelectedClassId} value={selectedClassId}>
@@ -456,18 +312,12 @@ export default function SetupCanteen() {
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
               initialFocus
-              disabled={[
-                // Disable weekends
-                { dayOfWeek: [0, 6] },
-                // Disable all future dates
-                { after: new Date() },
-              ]}
             />
           </PopoverContent>
         </Popover>
         <Button
           onClick={handleGenerateRecords}
-          disabled={isGenerating || isSubmittedToday}
+          disabled={isGenerating}
           className="w-full sm:w-auto"
         >
           {isGenerating ? "Generating..." : "Generate Records"}
@@ -497,61 +347,22 @@ export default function SetupCanteen() {
           />
         )}
       </div>
-
-      <AlertDialog
+      {/* Mark All confirmation dialog */}
+      <BulkActionDialog
         open={showBulkActionDialog}
         onOpenChange={setShowBulkActionDialog}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Bulk Action</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark {selectedRows.length} students as{" "}
-              {bulkAction === "paid" ? "paid" : "unpaid"}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkUpdateStatus}
-              className={
-                bulkAction === "paid" ? "bg-primary hover:bg-foreground" : ""
-              }
-            >
-              {bulkUpdatingLoader
-                ? "Processing..."
-                : `Mark as ${bulkAction === "paid" ? "Paid" : "Unpaid"}`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* Mark All confirmation dialog */}
-      <AlertDialog open={showMarkAllDialog} onOpenChange={setShowMarkAllDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Mark All</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark ALL students as{" "}
-              {markAllAction === "paid" ? "paid" : "unpaid"}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                markAllAction && handleMarkAllStudents(markAllAction)
-              }
-              className={
-                markAllAction === "paid" ? "bg-primary hover:bg-foreground" : ""
-              }
-            >
-              {bulkUpdatingLoader
-                ? "Processing..."
-                : `Mark All as ${markAllAction === "paid" ? "Paid" : "Unpaid"}`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        selectedRowsCount={selectedRows.length}
+        bulkAction={bulkAction}
+        onConfirm={handleBulkUpdateStatus}
+        loading={bulkUpdatingLoader}
+      />
+      <MarkAllDialog
+        open={showMarkAllDialog}
+        onOpenChange={setShowMarkAllDialog}
+        markAllAction={markAllAction}
+        onConfirm={() => markAllAction && handleMarkAllStudents(markAllAction)}
+        loading={bulkUpdatingLoader}
+      />
     </section>
   );
 }

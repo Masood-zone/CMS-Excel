@@ -17,11 +17,6 @@ export const viewColumns: ColumnDef<CanteenRecord>[] = [
     cell: ({ row }) => format(new Date(row.original.submitedAt), "PPp"),
   },
   {
-    accessorKey: "isPrepaid",
-    header: "Prepaid",
-    cell: ({ row }) => (row.original.isPrepaid ? "Yes" : "No"),
-  },
-  {
     accessorKey: "hasPaid",
     header: "Payment Status",
     cell: ({ row }) => (row.original.hasPaid ? "Paid" : "Unpaid"),
