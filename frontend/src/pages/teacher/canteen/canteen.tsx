@@ -2,18 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -21,7 +9,10 @@ import {
   useUpdateStudentStatus,
   useGenerateStudentRecords,
   useBulkUpdateStudentStatus,
+  useSubmitTeacherRecord,
+  useActiveTerm,
 } from "@/services/api/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -61,7 +52,7 @@ interface CanteenRecord {
 }
 
 export default function Canteen() {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, assigned_class } = useAuthStore();
   const teacher = user?.user;
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -75,6 +66,8 @@ export default function Canteen() {
   );
 
   const classId = assigned_class?.id ?? 0;
+  const { data: activeTerm } = useActiveTerm();
+  const termId = activeTerm?.id;
   const formattedDate = selectedDate.toISOString().split("T")[0];
   const { data: studentRecords, isLoading: recordsLoading } =
     useStudentRecordsByClassAndDate(classId, formattedDate);
@@ -82,42 +75,84 @@ export default function Canteen() {
   const { mutate: generateRecords, isLoading: isGenerating } =
     useGenerateStudentRecords();
   const { isLoading: bulkUpdatingLoader } = useBulkUpdateStudentStatus();
-
+  const { mutate: submitRecord } = useSubmitTeacherRecord();
   useEffect(() => {
     if (studentRecords) {
       setRecords(studentRecords);
     }
   }, [studentRecords]);
 
+  // Submit the whole record after updating a student's status
   const handleUpdateStatus = async (
     record: CanteenRecord,
     newStatus: { hasPaid: boolean; isAbsent: boolean }
   ) => {
     try {
-      // Only update local state, do not call updateStatus mutation
       const updatedRecord = {
         ...record,
         ...newStatus,
         date: selectedDate?.toISOString().split("T")[0] ?? "",
         payedBy: record.payedBy ? Number(record.payedBy) : null,
         isPrepaid: record.isPrepaid ?? false,
+        classId: record.classId ?? classId,
         submitedBy:
           typeof record.submitedBy === "number" ? record.submitedBy : 0,
-        classId: record.classId ?? classId,
       };
-      setRecords((prevRecords) =>
-        prevRecords.map((r) =>
-          r.id === record.id
-            ? {
-                ...updatedRecord,
-                payedBy: updatedRecord.payedBy
-                  ? updatedRecord.payedBy.toString()
-                  : null,
-              }
-            : r
-        )
+      const updatedRecords = records.map((r) =>
+        r.id === record.id
+          ? {
+              ...updatedRecord,
+              payedBy: updatedRecord.payedBy
+                ? updatedRecord.payedBy.toString()
+                : null,
+            }
+          : r
       );
-      toast.success("Student status updated successfully");
+      setRecords(updatedRecords);
+
+      // Submit the whole record (simulate teacher submission)
+      const payload = {
+        classId,
+        date: formattedDate,
+        unpaidStudents: updatedRecords
+          .filter((r) => !r.hasPaid && !r.isAbsent)
+          .map((r) => ({
+            id: r.id,
+            amount: r.settingsAmount,
+            paidBy: r.payedBy?.toString() || "",
+            hasPaid: false,
+            date: formattedDate,
+          })),
+        paidStudents: updatedRecords
+          .filter((r) => r.hasPaid)
+          .map((r) => ({
+            id: r.id,
+            amount: r.settingsAmount,
+            paidBy: r.payedBy?.toString() || "",
+            hasPaid: true,
+            date: formattedDate,
+          })),
+        absentStudents: updatedRecords
+          .filter((r) => r.isAbsent)
+          .map((r) => ({
+            id: r.id,
+            amount_owing: r.settingsAmount,
+            paidBy: r.payedBy?.toString() || "",
+            hasPaid: false,
+            date: formattedDate,
+          })),
+        submittedBy: user?.user?.id ?? 0,
+      };
+      submitRecord(payload, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["teacherAnalytics", classId, termId],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["studentRecords", classId, formattedDate],
+          });
+        },
+      });
     } catch (error) {
       console.error(error);
       toast.error("Failed to update student status");
@@ -127,7 +162,6 @@ export default function Canteen() {
   const handleBulkUpdateStatus = async () => {
     if (!selectedRows.length || !bulkAction) return;
     try {
-      // Only update local state, do not call bulkUpdateStatus mutation
       setRecords((prevRecords) =>
         prevRecords.map((record) => {
           const updatedRecord = selectedRows.find((r) => r.id === record.id);
@@ -156,7 +190,6 @@ export default function Canteen() {
 
   const handleMarkAllStudents = async (action: "paid" | "unpaid") => {
     try {
-      // Only update local state, do not call bulkUpdateStatus mutation
       setRecords((prevRecords) =>
         prevRecords.map((record) => {
           if (!record.isAbsent) {
@@ -310,30 +343,6 @@ export default function Canteen() {
           <h1 className="text-2xl font-bold">Hello, {teacher?.name}</h1>
           <p className="text-xl py-2">{assigned_class?.name}</p>
           <p className="text-base">Record canteen for {assigned_class?.name}</p>
-        </div>
-        <div className="space-x-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button>Submit canteen records</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will submit the canteen
-                  records for {teacher?.name} to the admin for approval.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => navigate("/teacher/canteen/submit")}
-                >
-                  Continue
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
       <div className="space-y-4">
